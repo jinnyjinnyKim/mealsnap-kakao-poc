@@ -89,10 +89,16 @@ function buildFridgeResponse() {
 	outputs.push({
 		listCard: {
 			header: { title: summary },
+			// 카카오 listCard 규칙: 하단 buttons 가 없으면 각 item 에 link 가 있어야 한다.
+			// (buttons 도 없고 item link 도 없으면 "탭 동작 없음"으로 스키마 거부됨 → must be of the same schema)
 			items: FRESH_ITEMS.slice(0, MAX_LIST_ITEMS).map((it) => ({
 				title: it.name,
 				description: `${it.status} · ${it.detail}`,
+				link: { web: coupangUrl(it.name) },
 			})),
+			buttons: [
+				{ action: 'webLink', label: '쿠팡에서 장보기', webLinkUrl: coupangUrl(FRESH_ITEMS.map((i) => i.name).join(' ')) },
+			],
 		},
 	});
 	return wrap(outputs);
