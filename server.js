@@ -76,32 +76,33 @@ function buildRebuyResponse() {
 	return wrap([expiredListCard(EXPIRED_ITEMS, '재구매가 필요한 재료')]);
 }
 
-// [냉장고 관리] 만료 항목 + 냉장고 전체 재료 요약
+// [냉장고 관리] 만료 항목을 단일 listCard 로 반환.
+// (카카오는 outputs 에 listCard 를 여러 개 넣으면 'must be of the same schema' 로 거부하는 경우가 있어,
+//  카드 1개로 합치고 냉장고 요약은 헤더 title 에 녹인다.)
 function buildFridgeResponse() {
-	const outputs = [];
-	if (EXPIRED_ITEMS.length > 0) {
-		outputs.push(expiredListCard(EXPIRED_ITEMS, '⚠️ 유통기한이 지난 재료'));
-	}
 	const total = EXPIRED_ITEMS.length + FRESH_ITEMS.length;
 	const approaching = FRESH_ITEMS.filter((i) => i.status === '임박').length;
 	const fresh = FRESH_ITEMS.filter((i) => i.status === '신선').length;
-	const summary = `🧊 냉장고 재료 ${total}개 · 만료 ${EXPIRED_ITEMS.length} / 임박 ${approaching} / 신선 ${fresh}`;
-	outputs.push({
-		listCard: {
-			header: { title: summary },
-			// 카카오 listCard 규칙: 하단 buttons 가 없으면 각 item 에 link 가 있어야 한다.
-			// (buttons 도 없고 item link 도 없으면 "탭 동작 없음"으로 스키마 거부됨 → must be of the same schema)
-			items: FRESH_ITEMS.slice(0, MAX_LIST_ITEMS).map((it) => ({
-				title: it.name,
-				description: `${it.status} · ${it.detail}`,
-				link: { web: coupangUrl(it.name) },
-			})),
-			buttons: [
-				{ action: 'webLink', label: '쿠팡에서 장보기', webLinkUrl: coupangUrl(FRESH_ITEMS.map((i) => i.name).join(' ')) },
-			],
-		},
-	});
-	return wrap(outputs);
+
+	if (EXPIRED_ITEMS.length === 0) {
+		// 만료 항목이 없으면 신선 목록을 보여준다(역시 단일 listCard).
+		return wrap([{
+			listCard: {
+				header: { title: `🧊 냉장고 재료 ${total}개 · 모두 신선해요 🎉` },
+				items: FRESH_ITEMS.slice(0, MAX_LIST_ITEMS).map((it) => ({
+					title: it.name,
+					description: `${it.status} · ${it.detail}`,
+					link: { web: coupangUrl(it.name) },
+				})),
+				buttons: [
+					{ action: 'webLink', label: '쿠팡에서 장보기', webLinkUrl: coupangUrl(FRESH_ITEMS.map((i) => i.name).join(' ')) },
+				],
+			},
+		}]);
+	}
+
+	const headerTitle = `🧊 냉장고 ${total}개 · 만료 ${EXPIRED_ITEMS.length} / 임박 ${approaching} / 신선 ${fresh}`;
+	return wrap([expiredListCard(EXPIRED_ITEMS, headerTitle)]);
 }
 
 function parseIntent(body) {
