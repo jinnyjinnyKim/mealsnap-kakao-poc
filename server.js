@@ -114,16 +114,45 @@ function parseIntent(body) {
 // 카카오 스킬 webhook (실제 백엔드와 동일 경로)
 app.post('/api/kakao/webhook', (req, res) => {
 	try {
-		// 디버그: 카카오가 실제로 보낸 발화/요청 본문을 로그로 남긴다.
-		const utterance = (req.body && req.body.userRequest && req.body.userRequest.utterance) || '(none)';
-		console.log('[webhook] utterance=', JSON.stringify(utterance), 'body=', JSON.stringify(req.body).slice(0, 500));
+		const utterance =
+			(req.body && req.body.userRequest && req.body.userRequest.utterance) || '(none)';
+
+		console.log(
+			'[webhook] utterance=',
+			JSON.stringify(utterance),
+			'body=',
+			JSON.stringify(req.body).slice(0, 500)
+		);
+
 		const intent = parseIntent(req.body);
 		const response = intent === 'rebuy' ? buildRebuyResponse() : buildFridgeResponse();
-		console.log('[webhook] intent=', intent, '-> outputs=', response.template.outputs.map((o) => Object.keys(o)[0]).join(','));
+
+		console.log(
+			'[webhook] intent=',
+			intent,
+			'-> outputs=',
+			response.template.outputs.map((o) => Object.keys(o)[0]).join(',')
+		);
+
+		// 응답 전체 로그
+		console.log('[webhook] response=', JSON.stringify(response, null, 2));
+
 		res.json(response);
 	} catch (err) {
 		console.error('webhook error:', err);
-		res.json(wrap([{ simpleText: { text: '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' } }]));
+
+		const errorResponse = wrap([
+			{
+				simpleText: {
+					text: '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.'
+				}
+			}
+		]);
+
+		// 에러 응답도 로그
+		console.log('[webhook] error response=', JSON.stringify(errorResponse, null, 2));
+
+		res.json(errorResponse);
 	}
 });
 
