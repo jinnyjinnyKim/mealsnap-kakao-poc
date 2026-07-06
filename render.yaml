@@ -1,0 +1,10 @@
+# Render Blueprint — 이 저장소를 Render 에 연결하면 자동으로 이 설정으로 배포된다.
+# (수동 생성 시엔 이 파일 없이도 됨: New > Web Service > Node, build=npm install, start=npm start)
+services:
+  - type: web
+    name: mealsnap-kakao-poc
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
