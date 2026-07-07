@@ -57,7 +57,7 @@ function expiredListCard(items, headerTitle) {
 			items: shown.map((it) => ({
 				title: it.name,
 				description: `${it.days_overdue}일 지남 (${it.expiry_date})`,
-				thumbnail: { imageUrl: it.imageUrl },
+				imageUrl: it.imageUrl,
 				link: { web: coupangUrl(it.name) },
 			})),
 		},
