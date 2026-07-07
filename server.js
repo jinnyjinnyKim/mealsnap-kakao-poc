@@ -34,6 +34,11 @@ const FRESH_ITEMS = [
 
 const MAX_LIST_ITEMS = 4; // 카카오 listCard 최대 5행
 
+const COUPANG_SEARCH_BASE = 'https://www.coupang.com/np/search';
+function coupangUrl(productName) {
+	return `${COUPANG_SEARCH_BASE}?q=${encodeURIComponent(productName || '')}`;
+}
+
 const QUICK_REPLIES = [
 	{ label: '냉장고 관리', action: 'message', messageText: '냉장고관리' },
 	{ label: '재료 재구매', action: 'message', messageText: '재료 재구매' },
@@ -54,7 +59,11 @@ function expiredListCard(items, headerTitle) {
 			items: shown.map((it) => ({
 				title: it.name,
 				description: `${it.days_overdue}일 지남 (${it.expiry_date})`,
+				link: { web: coupangUrl(it.name) },
 			})),
+			buttons: [
+				{ action: 'webLink', label: '쿠팡에서 전체 보기', webLinkUrl: coupangUrl(shown.map((i) => i.name).join(' ')) },
+			],
 		},
 	};
 }
