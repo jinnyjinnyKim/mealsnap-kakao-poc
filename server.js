@@ -25,11 +25,11 @@ const EXPIRED_ITEMS = [
 
 // 냉장고 전체 재료(만료 제외) 목업 — '냉장고 관리'에서 요약 표시용
 const FRESH_ITEMS = [
-	{ name: '양파', status: '신선', detail: '12일 남음' },
-	{ name: '당근', status: '신선', detail: '9일 남음' },
-	{ name: '고추장', status: '신선', detail: '40일 남음' },
-	{ name: '간장', status: '신선', detail: '120일 남음' },
-	{ name: '대파', status: '임박', detail: '2일 남음' },
+	{ name: '양파', status: '신선', detail: '12일 남음', imageUrl: 'https://picsum.photos/100/100?random=10' },
+	{ name: '당근', status: '신선', detail: '9일 남음', imageUrl: 'https://picsum.photos/100/100?random=11' },
+	{ name: '고추장', status: '신선', detail: '40일 남음', imageUrl: 'https://picsum.photos/100/100?random=12' },
+	{ name: '간장', status: '신선', detail: '120일 남음', imageUrl: 'https://picsum.photos/100/100?random=13' },
+	{ name: '대파', status: '임박', detail: '2일 남음', imageUrl: 'https://picsum.photos/100/100?random=14' },
 ];
 
 const MAX_LIST_ITEMS = 4; // 카카오 listCard 최대 5행
@@ -97,6 +97,7 @@ function buildFridgeResponse() {
 			items: approaching.slice(0, MAX_LIST_ITEMS).map((it) => ({
 				title: it.name,
 				description: `${it.detail}`,
+				imageUrl: it.imageUrl,
 			})),
 		});
 	}
@@ -108,6 +109,7 @@ function buildFridgeResponse() {
 			items: fresh.slice(0, MAX_LIST_ITEMS).map((it) => ({
 				title: it.name,
 				description: `${it.detail}`,
+				imageUrl: it.imageUrl,
 			})),
 		});
 	}
