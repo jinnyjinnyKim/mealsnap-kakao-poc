@@ -59,7 +59,7 @@ function expiredListCard(items, headerTitle) {
 			items: shown.map((it) => ({
 				title: it.name,
 				description: `${it.days_overdue}일 지남 (${it.expiry_date})`,
-				link: { web: coupangUrl(it.name) },
+				link: { webLinkUrl: coupangUrl(it.name) },
 			})),
 			buttons: [
 				{ action: 'webLink', label: '쿠팡에서 전체 보기', webLinkUrl: coupangUrl(shown.map((i) => i.name).join(' ')) },
@@ -92,7 +92,7 @@ function buildFridgeResponse() {
 				items: FRESH_ITEMS.slice(0, MAX_LIST_ITEMS).map((it) => ({
 					title: it.name,
 					description: `${it.status} · ${it.detail}`,
-					link: { web: coupangUrl(it.name) },
+					link: { webLinkUrl: coupangUrl(it.name) },
 				})),
 				buttons: [
 					{ action: 'webLink', label: '쿠팡에서 장보기', webLinkUrl: coupangUrl(FRESH_ITEMS.map((i) => i.name).join(' ')) },
