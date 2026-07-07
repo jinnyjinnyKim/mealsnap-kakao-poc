@@ -29,9 +29,9 @@ const generateImage = (filename, bgColor, text, textColor = '#fff') => {
 	console.log(`✓ ${filename} 생성됨`);
 };
 
-// 상태별 이미지 생성
-generateImage('expired.png', '#FF4444', '만료', '#fff');
-generateImage('approaching.png', '#FFAA00', '임박', '#fff');
-generateImage('fresh.png', '#44AA44', '신선', '#fff');
+// 상태별 이미지 생성 (rebuy는 만료와 같은 색)
+generateImage('expired.png', '#FF6B6B', '만료', '#fff');
+generateImage('approaching.png', '#FFD93D', '임박', '#fff');
+generateImage('fresh.png', '#6BCB77', '신선', '#fff');
 
 console.log('이미지 생성 완료!');

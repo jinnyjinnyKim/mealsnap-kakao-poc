@@ -16,10 +16,13 @@ const PORT = process.env.PORT || 3000; // Render 는 PORT 를 주입한다.
 
 // ── 그럴듯한 고정 목업: 유통기한 지난 식재료 (오늘 기준 과거 날짜) ──
 // days_overdue = 며칠 지났는지(양수). 실제 앱에선 DB의 expiry_date 로 계산되지만 여기선 고정.
-// 상태별 공통 이미지
-const EXPIRED_IMAGE = '/expired.png';
-const APPROACHING_IMAGE = '/approaching.png';
-const FRESH_IMAGE = '/fresh.png';
+
+// 상태별 공통 이미지 URL (요청 시 호스트 정보로 절대 URL 생성)
+const getImageUrl = (req, filename) => {
+	const protocol = req.protocol || 'http';
+	const host = req.get('host') || `localhost:${PORT}`;
+	return `${protocol}://${host}/${filename}`;
+};
 
 const EXPIRED_ITEMS = [
 	{ name: '시금치', days_overdue: 5, expiry_date: '2026-07-01' },
@@ -55,7 +58,7 @@ function wrap(outputs) {
 }
 
 // 만료 항목 → 쿠팡 재구매 링크가 달린 listCard (이미지 포함)
-function expiredListCard(items, headerTitle) {
+function expiredListCard(items, headerTitle, req) {
 	const shown = items.slice(0, MAX_LIST_ITEMS);
 	return {
 		listCard: {
@@ -63,7 +66,7 @@ function expiredListCard(items, headerTitle) {
 			items: shown.map((it) => ({
 				title: it.name,
 				description: `${it.days_overdue}일 지남 (${it.expiry_date})`,
-				imageUrl: EXPIRED_IMAGE,
+				imageUrl: getImageUrl(req, 'expired.png'),
 				link: { web: coupangUrl(it.name) },
 			})),
 		},
@@ -71,15 +74,15 @@ function expiredListCard(items, headerTitle) {
 }
 
 // [재료 재구매] 만료 항목 → 쿠팡 링크
-function buildRebuyResponse() {
+function buildRebuyResponse(req) {
 	if (EXPIRED_ITEMS.length === 0) {
 		return wrap([{ simpleText: { text: '재구매가 필요한(유통기한 지난) 재료가 없습니다' } }]);
 	}
-	return wrap([expiredListCard(EXPIRED_ITEMS, '재구매가 필요한 재료')]);
+	return wrap([expiredListCard(EXPIRED_ITEMS, '재구매가 필요한 재료', req)]);
 }
 
 // [냉장고 관리] carousel 안에 만료/임박/신선 카테고리별 listCard.
-function buildFridgeResponse() {
+function buildFridgeResponse(req) {
 	const approaching = FRESH_ITEMS.filter((i) => i.status === '임박');
 	const fresh = FRESH_ITEMS.filter((i) => i.status === '신선');
 
@@ -91,7 +94,7 @@ function buildFridgeResponse() {
 		items: EXPIRED_ITEMS.slice(0, MAX_LIST_ITEMS).map((it) => ({
 			title: it.name,
 			description: `${it.days_overdue}일 지남 (${it.expiry_date})`,
-			imageUrl: EXPIRED_IMAGE,
+			imageUrl: getImageUrl(req, 'expired.png'),
 			link: { web: coupangUrl(it.name) },
 		})),
 	});
@@ -103,7 +106,7 @@ function buildFridgeResponse() {
 			items: approaching.slice(0, MAX_LIST_ITEMS).map((it) => ({
 				title: it.name,
 				description: `${it.detail}`,
-				imageUrl: APPROACHING_IMAGE,
+				imageUrl: getImageUrl(req, 'approaching.png'),
 			})),
 		});
 	}
@@ -115,7 +118,7 @@ function buildFridgeResponse() {
 			items: fresh.slice(0, MAX_LIST_ITEMS).map((it) => ({
 				title: it.name,
 				description: `${it.detail}`,
-				imageUrl: FRESH_IMAGE,
+				imageUrl: getImageUrl(req, 'fresh.png'),
 			})),
 		});
 	}
@@ -143,7 +146,7 @@ app.post('/api/kakao/webhook', (req, res) => {
 		);
 
 		const intent = parseIntent(req.body);
-		const response = intent === 'rebuy' ? buildRebuyResponse() : buildFridgeResponse();
+		const response = intent === 'rebuy' ? buildRebuyResponse(req) : buildFridgeResponse(req);
 
 		console.log(
 			'[webhook] intent=',
