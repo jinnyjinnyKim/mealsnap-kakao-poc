@@ -48,15 +48,11 @@ function wrap(outputs) {
 	return { version: '2.0', template: { outputs, quickReplies: QUICK_REPLIES } };
 }
 
-// 만료 항목 → 쿠팡 재구매 링크가 달린 listCard
-function expiredListCard(items, headerTitle) {
-	const shown = items.slice(0, MAX_LIST_ITEMS);
-	const overflow = items.length - shown.length;
-	const title = overflow > 0 ? `${headerTitle} (외 ${overflow}개 더)` : headerTitle;
+// 만료 항목 → 쿠팡 재구매 링크가 달린 carousel
+function expiredCarousel(items, headerTitle) {
 	return {
-		listCard: {
-			header: { title },
-			items: shown.map((it) => ({
+		carousel: {
+			items: items.map((it) => ({
 				title: it.name,
 				description: `${it.days_overdue}일 지남 (${it.expiry_date})`,
 				link: { web: coupangUrl(it.name) },
@@ -70,17 +66,15 @@ function buildRebuyResponse() {
 	if (EXPIRED_ITEMS.length === 0) {
 		return wrap([{ simpleText: { text: '재구매가 필요한(유통기한 지난) 재료가 없습니다' } }]);
 	}
-	return wrap([expiredListCard(EXPIRED_ITEMS, '재구매가 필요한 재료')]);
+	return wrap([expiredCarousel(EXPIRED_ITEMS, '재구매가 필요한 재료')]);
 }
 
-// [냉장고 관리] 만료 항목을 단일 listCard 로 반환.
+// [냉장고 관리] 만료 항목을 carousel 로 반환.
 function buildFridgeResponse() {
 	const total = EXPIRED_ITEMS.length + FRESH_ITEMS.length;
-	const approaching = FRESH_ITEMS.filter((i) => i.status === '임박').length;
-	const fresh = FRESH_ITEMS.filter((i) => i.status === '신선').length;
 
 	if (EXPIRED_ITEMS.length === 0) {
-		// 만료 항목이 없으면 신선 목록을 보여준다(역시 단일 listCard).
+		// 만료 항목이 없으면 신선 목록을 보여준다.
 		return wrap([{
 			listCard: {
 				header: { title: `냉장고 재료 ${total}개 모두 신선` },
@@ -92,8 +86,7 @@ function buildFridgeResponse() {
 		}]);
 	}
 
-	const headerTitle = `냉장고 ${total}개 만료 ${EXPIRED_ITEMS.length} 임박 ${approaching} 신선 ${fresh}`;
-	return wrap([expiredListCard(EXPIRED_ITEMS, headerTitle)]);
+	return wrap([expiredCarousel(EXPIRED_ITEMS, '만료 항목')]);
 }
 
 function parseIntent(body) {
