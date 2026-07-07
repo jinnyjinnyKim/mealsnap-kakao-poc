@@ -32,7 +32,7 @@ const FRESH_ITEMS = [
 	{ name: '대파', status: '임박', detail: '2일 남음' },
 ];
 
-const MAX_LIST_ITEMS = 5; // 카카오 listCard 최대 5행
+const MAX_LIST_ITEMS = 4; // 카카오 listCard 최대 5행
 
 function wrap(outputs) {
 	return { version: '2.0', template: { outputs } };
