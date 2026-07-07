@@ -72,24 +72,59 @@ function buildRebuyResponse() {
 	return wrap([expiredListCard(EXPIRED_ITEMS, '재구매가 필요한 재료')]);
 }
 
-// [냉장고 관리] 만료 항목을 carousel 로 반환.
+// [냉장고 관리] 만료/임박/신선 각각을 carousel의 listCard로 반환.
 function buildFridgeResponse() {
 	const total = EXPIRED_ITEMS.length + FRESH_ITEMS.length;
+	const approaching = FRESH_ITEMS.filter((i) => i.status === '임박');
+	const fresh = FRESH_ITEMS.filter((i) => i.status === '신선');
 
-	if (EXPIRED_ITEMS.length === 0) {
-		// 만료 항목이 없으면 신선 목록을 보여준다.
-		return wrap([{
+	const carouselItems = [];
+
+	// 1. 만료 항목
+	carouselItems.push({
+		listCard: {
+			header: { title: `만료 항목 (${EXPIRED_ITEMS.length}개)` },
+			items: EXPIRED_ITEMS.slice(0, MAX_LIST_ITEMS).map((it) => ({
+				title: it.name,
+				description: `${it.days_overdue}일 지남 (${it.expiry_date})`,
+				imageUrl: it.imageUrl,
+				link: { web: coupangUrl(it.name) },
+			})),
+		},
+	});
+
+	// 2. 임박 항목
+	if (approaching.length > 0) {
+		carouselItems.push({
 			listCard: {
-				header: { title: `냉장고 재료 ${total}개 모두 신선` },
-				items: FRESH_ITEMS.slice(0, MAX_LIST_ITEMS).map((it) => ({
+				header: { title: `임박 항목 (${approaching.length}개)` },
+				items: approaching.slice(0, MAX_LIST_ITEMS).map((it) => ({
 					title: it.name,
-					description: `${it.status} ${it.detail}`,
+					description: `${it.detail}`,
 				})),
 			},
-		}]);
+		});
 	}
 
-	return wrap([expiredListCard(EXPIRED_ITEMS, '만료 항목')]);
+	// 3. 신선 항목
+	if (fresh.length > 0) {
+		carouselItems.push({
+			listCard: {
+				header: { title: `신선 항목 (${fresh.length}개)` },
+				items: fresh.slice(0, MAX_LIST_ITEMS).map((it) => ({
+					title: it.name,
+					description: `${it.detail}`,
+				})),
+			},
+		});
+	}
+
+	return wrap([{
+		carousel: {
+			type: 'listCard',
+			items: carouselItems,
+		},
+	}]);
 }
 
 function parseIntent(body) {
