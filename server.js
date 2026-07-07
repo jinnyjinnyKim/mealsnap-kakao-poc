@@ -70,7 +70,7 @@ function expiredListCard(items, headerTitle) {
 // [재료 재구매] 만료 항목 → 쿠팡 링크
 function buildRebuyResponse() {
 	if (EXPIRED_ITEMS.length === 0) {
-		return wrap([{ simpleText: { text: '재구매가 필요한(유통기한 지난) 재료가 없습니다 🎉' } }]);
+		return wrap([{ simpleText: { text: '재구매가 필요한(유통기한 지난) 재료가 없습니다' } }]);
 	}
 	return wrap([expiredListCard(EXPIRED_ITEMS, '재구매가 필요한 재료')]);
 }
@@ -87,10 +87,10 @@ function buildFridgeResponse() {
 		// 만료 항목이 없으면 신선 목록을 보여준다(역시 단일 listCard).
 		return wrap([{
 			listCard: {
-				header: { title: `🧊 냉장고 재료 ${total}개 · 모두 신선해요 🎉` },
+				header: { title: `냉장고 재료 ${total}개 모두 신선` },
 				items: FRESH_ITEMS.slice(0, MAX_LIST_ITEMS).map((it) => ({
 					title: it.name,
-					description: `${it.status} · ${it.detail}`,
+					description: `${it.status} ${it.detail}`,
 				})),
 				buttons: [
 					{ action: 'webLink', label: '쿠팡에서 장보기', webLinkUrl: coupangUrl(FRESH_ITEMS.map((i) => i.name).join(' ')) },
@@ -99,7 +99,7 @@ function buildFridgeResponse() {
 		}]);
 	}
 
-	const headerTitle = `🧊 냉장고 ${total}개 · 만료 ${EXPIRED_ITEMS.length} / 임박 ${approaching} / 신선 ${fresh}`;
+	const headerTitle = `냉장고 ${total}개 만료 ${EXPIRED_ITEMS.length} 임박 ${approaching} 신선 ${fresh}`;
 	return wrap([expiredListCard(EXPIRED_ITEMS, headerTitle)]);
 }
 
