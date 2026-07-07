@@ -48,12 +48,13 @@ function wrap(outputs) {
 	return { version: '2.0', template: { outputs, quickReplies: QUICK_REPLIES } };
 }
 
-// 만료 항목 → 쿠팡 재구매 링크가 달린 carousel
-function expiredCarousel(items, headerTitle) {
+// 만료 항목 → 쿠팡 재구매 링크가 달린 listCard (이미지 포함)
+function expiredListCard(items, headerTitle) {
+	const shown = items.slice(0, MAX_LIST_ITEMS);
 	return {
-		carousel: {
-			type: 'basicCard',
-			items: items.map((it) => ({
+		listCard: {
+			header: { title: headerTitle },
+			items: shown.map((it) => ({
 				title: it.name,
 				description: `${it.days_overdue}일 지남 (${it.expiry_date})`,
 				image: { imageUrl: it.imageUrl },
@@ -68,7 +69,7 @@ function buildRebuyResponse() {
 	if (EXPIRED_ITEMS.length === 0) {
 		return wrap([{ simpleText: { text: '재구매가 필요한(유통기한 지난) 재료가 없습니다' } }]);
 	}
-	return wrap([expiredCarousel(EXPIRED_ITEMS, '재구매가 필요한 재료')]);
+	return wrap([expiredListCard(EXPIRED_ITEMS, '재구매가 필요한 재료')]);
 }
 
 // [냉장고 관리] 만료 항목을 carousel 로 반환.
@@ -88,7 +89,7 @@ function buildFridgeResponse() {
 		}]);
 	}
 
-	return wrap([expiredCarousel(EXPIRED_ITEMS, '만료 항목')]);
+	return wrap([expiredListCard(EXPIRED_ITEMS, '만료 항목')]);
 }
 
 function parseIntent(body) {
