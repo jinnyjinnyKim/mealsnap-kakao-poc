@@ -16,11 +16,11 @@ const PORT = process.env.PORT || 3000; // Render 는 PORT 를 주입한다.
 // ── 그럴듯한 고정 목업: 유통기한 지난 식재료 (오늘 기준 과거 날짜) ──
 // days_overdue = 며칠 지났는지(양수). 실제 앱에선 DB의 expiry_date 로 계산되지만 여기선 고정.
 const EXPIRED_ITEMS = [
-	{ name: '시금치', days_overdue: 5, expiry_date: '2026-07-01', imageUrl: 'https://via.placeholder.com/100/90EE90/000000?text=시금치' },
-	{ name: '닭가슴살', days_overdue: 4, expiry_date: '2026-07-02', imageUrl: 'https://via.placeholder.com/100/FFB6C1/000000?text=닭가슴살' },
-	{ name: '우유', days_overdue: 3, expiry_date: '2026-07-03', imageUrl: 'https://via.placeholder.com/100/FFFACD/000000?text=우유' },
-	{ name: '두부', days_overdue: 2, expiry_date: '2026-07-04', imageUrl: 'https://via.placeholder.com/100/D3D3D3/000000?text=두부' },
-	{ name: '계란', days_overdue: 1, expiry_date: '2026-07-05', imageUrl: 'https://via.placeholder.com/100/FFD700/000000?text=계란' },
+	{ name: '시금치', days_overdue: 5, expiry_date: '2026-07-01', imageUrl: 'https://picsum.photos/100/100?random=1' },
+	{ name: '닭가슴살', days_overdue: 4, expiry_date: '2026-07-02', imageUrl: 'https://picsum.photos/100/100?random=2' },
+	{ name: '우유', days_overdue: 3, expiry_date: '2026-07-03', imageUrl: 'https://picsum.photos/100/100?random=3' },
+	{ name: '두부', days_overdue: 2, expiry_date: '2026-07-04', imageUrl: 'https://picsum.photos/100/100?random=4' },
+	{ name: '계란', days_overdue: 1, expiry_date: '2026-07-05', imageUrl: 'https://picsum.photos/100/100?random=5' },
 ];
 
 // 냉장고 전체 재료(만료 제외) 목업 — '냉장고 관리'에서 요약 표시용
