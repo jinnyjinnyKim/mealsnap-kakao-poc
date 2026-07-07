@@ -52,6 +52,7 @@ function wrap(outputs) {
 function expiredCarousel(items, headerTitle) {
 	return {
 		carousel: {
+			type: 'basicCard',
 			items: items.map((it) => ({
 				title: it.name,
 				description: `${it.days_overdue}일 지남 (${it.expiry_date})`,
