@@ -9,30 +9,33 @@ const express = require('express');
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
+app.use(express.static('public')); // 정적 이미지 서빙
 app.use((req, _res, next) => { console.log(`${new Date().toISOString()} ${req.method} ${req.url}`); next(); });
 
 const PORT = process.env.PORT || 3000; // Render 는 PORT 를 주입한다.
 
 // ── 그럴듯한 고정 목업: 유통기한 지난 식재료 (오늘 기준 과거 날짜) ──
 // days_overdue = 며칠 지났는지(양수). 실제 앱에선 DB의 expiry_date 로 계산되지만 여기선 고정.
-// 식재료별 컬러 박스 (모든 디바이스에서 호환)
-const colorBoxUrl = (color) => `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect fill='${color}' width='100' height='100'/%3E%3C/svg%3E`;
+// 상태별 공통 이미지
+const EXPIRED_IMAGE = '/expired.png';
+const APPROACHING_IMAGE = '/approaching.png';
+const FRESH_IMAGE = '/fresh.png';
 
 const EXPIRED_ITEMS = [
-	{ name: '시금치', days_overdue: 5, expiry_date: '2026-07-01', imageUrl: colorBoxUrl('%2390EE90') },
-	{ name: '닭가슴살', days_overdue: 4, expiry_date: '2026-07-02', imageUrl: colorBoxUrl('%23FFB6C1') },
-	{ name: '우유', days_overdue: 3, expiry_date: '2026-07-03', imageUrl: colorBoxUrl('%23FFFACD') },
-	{ name: '두부', days_overdue: 2, expiry_date: '2026-07-04', imageUrl: colorBoxUrl('%23D3D3D3') },
-	{ name: '계란', days_overdue: 1, expiry_date: '2026-07-05', imageUrl: colorBoxUrl('%23FFD700') },
+	{ name: '시금치', days_overdue: 5, expiry_date: '2026-07-01' },
+	{ name: '닭가슴살', days_overdue: 4, expiry_date: '2026-07-02' },
+	{ name: '우유', days_overdue: 3, expiry_date: '2026-07-03' },
+	{ name: '두부', days_overdue: 2, expiry_date: '2026-07-04' },
+	{ name: '계란', days_overdue: 1, expiry_date: '2026-07-05' },
 ];
 
 // 냉장고 전체 재료(만료 제외) 목업 — '냉장고 관리'에서 요약 표시용
 const FRESH_ITEMS = [
-	{ name: '양파', status: '신선', detail: '12일 남음', imageUrl: colorBoxUrl('%23FFA500') },
-	{ name: '당근', status: '신선', detail: '9일 남음', imageUrl: colorBoxUrl('%23FF6347') },
-	{ name: '고추장', status: '신선', detail: '40일 남음', imageUrl: colorBoxUrl('%23DC143C') },
-	{ name: '간장', status: '신선', detail: '120일 남음', imageUrl: colorBoxUrl('%23654321') },
-	{ name: '대파', status: '임박', detail: '2일 남음', imageUrl: colorBoxUrl('%2390EE90') },
+	{ name: '양파', status: '신선', detail: '12일 남음' },
+	{ name: '당근', status: '신선', detail: '9일 남음' },
+	{ name: '고추장', status: '신선', detail: '40일 남음' },
+	{ name: '간장', status: '신선', detail: '120일 남음' },
+	{ name: '대파', status: '임박', detail: '2일 남음' },
 ];
 
 const MAX_LIST_ITEMS = 4; // 카카오 listCard 최대 5행
@@ -60,7 +63,7 @@ function expiredListCard(items, headerTitle) {
 			items: shown.map((it) => ({
 				title: it.name,
 				description: `${it.days_overdue}일 지남 (${it.expiry_date})`,
-				imageUrl: it.imageUrl,
+				imageUrl: EXPIRED_IMAGE,
 				link: { web: coupangUrl(it.name) },
 			})),
 		},
@@ -88,7 +91,7 @@ function buildFridgeResponse() {
 		items: EXPIRED_ITEMS.slice(0, MAX_LIST_ITEMS).map((it) => ({
 			title: it.name,
 			description: `${it.days_overdue}일 지남 (${it.expiry_date})`,
-			imageUrl: it.imageUrl,
+			imageUrl: EXPIRED_IMAGE,
 			link: { web: coupangUrl(it.name) },
 		})),
 	});
@@ -100,7 +103,7 @@ function buildFridgeResponse() {
 			items: approaching.slice(0, MAX_LIST_ITEMS).map((it) => ({
 				title: it.name,
 				description: `${it.detail}`,
-				imageUrl: it.imageUrl,
+				imageUrl: APPROACHING_IMAGE,
 			})),
 		});
 	}
@@ -112,7 +115,7 @@ function buildFridgeResponse() {
 			items: fresh.slice(0, MAX_LIST_ITEMS).map((it) => ({
 				title: it.name,
 				description: `${it.detail}`,
-				imageUrl: it.imageUrl,
+				imageUrl: FRESH_IMAGE,
 			})),
 		});
 	}
