@@ -34,8 +34,13 @@ const FRESH_ITEMS = [
 
 const MAX_LIST_ITEMS = 4; // 카카오 listCard 최대 5행
 
+const QUICK_REPLIES = [
+	{ label: '냉장고 관리', action: 'message', messageText: '냉장고관리' },
+	{ label: '재료 재구매', action: 'message', messageText: '재료 재구매' },
+];
+
 function wrap(outputs) {
-	return { version: '2.0', template: { outputs } };
+	return { version: '2.0', template: { outputs, quickReplies: QUICK_REPLIES } };
 }
 
 // 만료 항목 → 쿠팡 재구매 링크가 달린 listCard
