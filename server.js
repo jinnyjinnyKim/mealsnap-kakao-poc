@@ -72,53 +72,47 @@ function buildRebuyResponse() {
 	return wrap([expiredListCard(EXPIRED_ITEMS, '재구매가 필요한 재료')]);
 }
 
-// [냉장고 관리] 만료/임박/신선 각각을 별개 메시지(listCard)로 반환.
+// [냉장고 관리] carousel 안에 만료/임박/신선 카테고리별 listCard.
 function buildFridgeResponse() {
 	const approaching = FRESH_ITEMS.filter((i) => i.status === '임박');
 	const fresh = FRESH_ITEMS.filter((i) => i.status === '신선');
 
-	const outputs = [];
+	const carouselItems = [];
 
 	// 1. 만료 항목
-	outputs.push({
-		listCard: {
-			header: { title: `만료 항목 (${EXPIRED_ITEMS.length}개)` },
-			items: EXPIRED_ITEMS.slice(0, MAX_LIST_ITEMS).map((it) => ({
-				title: it.name,
-				description: `${it.days_overdue}일 지남 (${it.expiry_date})`,
-				imageUrl: it.imageUrl,
-				link: { web: coupangUrl(it.name) },
-			})),
-		},
+	carouselItems.push({
+		header: { title: `만료 항목 (${EXPIRED_ITEMS.length}개)` },
+		items: EXPIRED_ITEMS.slice(0, MAX_LIST_ITEMS).map((it) => ({
+			title: it.name,
+			description: `${it.days_overdue}일 지남 (${it.expiry_date})`,
+			imageUrl: it.imageUrl,
+			link: { web: coupangUrl(it.name) },
+		})),
 	});
 
 	// 2. 임박 항목
 	if (approaching.length > 0) {
-		outputs.push({
-			listCard: {
-				header: { title: `임박 항목 (${approaching.length}개)` },
-				items: approaching.slice(0, MAX_LIST_ITEMS).map((it) => ({
-					title: it.name,
-					description: `${it.detail}`,
-				})),
-			},
+		carouselItems.push({
+			header: { title: `임박 항목 (${approaching.length}개)` },
+			items: approaching.slice(0, MAX_LIST_ITEMS).map((it) => ({
+				title: it.name,
+				description: `${it.detail}`,
+			})),
 		});
 	}
 
 	// 3. 신선 항목
 	if (fresh.length > 0) {
-		outputs.push({
-			listCard: {
-				header: { title: `신선 항목 (${fresh.length}개)` },
-				items: fresh.slice(0, MAX_LIST_ITEMS).map((it) => ({
-					title: it.name,
-					description: `${it.detail}`,
-				})),
-			},
+		carouselItems.push({
+			header: { title: `신선 항목 (${fresh.length}개)` },
+			items: fresh.slice(0, MAX_LIST_ITEMS).map((it) => ({
+				title: it.name,
+				description: `${it.detail}`,
+			})),
 		});
 	}
 
-	return { version: '2.0', template: { outputs, quickReplies: QUICK_REPLIES } };
+	return { version: '2.0', template: { outputs: [{ carousel: { type: 'listCard', items: carouselItems } }], quickReplies: QUICK_REPLIES } };
 }
 
 function parseIntent(body) {
