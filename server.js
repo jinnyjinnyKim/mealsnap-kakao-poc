@@ -62,29 +62,9 @@ function buildRebuyResponse() {
 	return wrap([expiredListCard(EXPIRED_ITEMS, '재구매가 필요한 재료')]);
 }
 
-// [냉장고 관리] 만료 항목을 단일 listCard 로 반환.
-// (카카오는 outputs 에 listCard 를 여러 개 넣으면 'must be of the same schema' 로 거부하는 경우가 있어,
-//  카드 1개로 합치고 냉장고 요약은 헤더 title 에 녹인다.)
+// [냉장고 관리] simpleText 테스트
 function buildFridgeResponse() {
-	const total = EXPIRED_ITEMS.length + FRESH_ITEMS.length;
-	const approaching = FRESH_ITEMS.filter((i) => i.status === '임박').length;
-	const fresh = FRESH_ITEMS.filter((i) => i.status === '신선').length;
-
-	if (EXPIRED_ITEMS.length === 0) {
-		// 만료 항목이 없으면 신선 목록을 보여준다(역시 단일 listCard).
-		return wrap([{
-			listCard: {
-				header: { title: `냉장고 재료 ${total}개 모두 신선` },
-				items: FRESH_ITEMS.slice(0, MAX_LIST_ITEMS).map((it) => ({
-					title: it.name,
-					description: `${it.status} ${it.detail}`,
-				})),
-			},
-		}]);
-	}
-
-	const headerTitle = `냉장고 ${total}개 만료 ${EXPIRED_ITEMS.length} 임박 ${approaching} 신선 ${fresh}`;
-	return wrap([expiredListCard(EXPIRED_ITEMS, headerTitle)]);
+	return wrap([{ simpleText: { text: '냉장고 목록 테스트' } }]);
 }
 
 function parseIntent(body) {
@@ -96,14 +76,14 @@ function parseIntent(body) {
 // 카카오 스킬 webhook (실제 백엔드와 동일 경로)
 app.post('/api/kakao/webhook', (req, res) => {
 	try {
+		console.log('[webhook] full request body=', JSON.stringify(req.body, null, 2));
+
 		const utterance =
 			(req.body && req.body.userRequest && req.body.userRequest.utterance) || '(none)';
 
 		console.log(
 			'[webhook] utterance=',
-			JSON.stringify(utterance),
-			'body=',
-			JSON.stringify(req.body).slice(0, 500)
+			JSON.stringify(utterance)
 		);
 
 		const intent = parseIntent(req.body);
