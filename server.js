@@ -61,9 +61,6 @@ function expiredListCard(items, headerTitle) {
 				description: `${it.days_overdue}일 지남 (${it.expiry_date})`,
 				link: { web: coupangUrl(it.name) },
 			})),
-			buttons: [
-				{ action: 'webLink', label: '쿠팡에서 전체 보기', webLinkUrl: coupangUrl(shown.map((i) => i.name).join(' ')) },
-			],
 		},
 	};
 }
