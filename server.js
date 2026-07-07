@@ -32,11 +32,6 @@ const FRESH_ITEMS = [
 	{ name: '대파', status: '임박', detail: '2일 남음' },
 ];
 
-const COUPANG_SEARCH_BASE = 'https://www.coupang.com/np/search';
-function coupangUrl(productName) {
-	return `${COUPANG_SEARCH_BASE}?q=${encodeURIComponent(productName || '')}`;
-}
-
 const MAX_LIST_ITEMS = 5; // 카카오 listCard 최대 5행
 
 function wrap(outputs) {
@@ -55,9 +50,6 @@ function expiredListCard(items, headerTitle) {
 				title: it.name,
 				description: `${it.days_overdue}일 지남 (${it.expiry_date})`,
 			})),
-			buttons: [
-				{ action: 'webLink', label: '쿠팡에서 전체 보기', webLinkUrl: coupangUrl(shown.map((i) => i.name).join(' ')) },
-			],
 		},
 	};
 }
@@ -87,9 +79,6 @@ function buildFridgeResponse() {
 					title: it.name,
 					description: `${it.status} ${it.detail}`,
 				})),
-				buttons: [
-					{ action: 'webLink', label: '쿠팡에서 장보기', webLinkUrl: coupangUrl(FRESH_ITEMS.map((i) => i.name).join(' ')) },
-				],
 			},
 		}]);
 	}
