@@ -15,21 +15,23 @@ const PORT = process.env.PORT || 3000; // Render 는 PORT 를 주입한다.
 
 // ── 그럴듯한 고정 목업: 유통기한 지난 식재료 (오늘 기준 과거 날짜) ──
 // days_overdue = 며칠 지났는지(양수). 실제 앱에선 DB의 expiry_date 로 계산되지만 여기선 고정.
+const unsplashUrl = (query) => `https://source.unsplash.com/100x100/?${encodeURIComponent(query)}`;
+
 const EXPIRED_ITEMS = [
-	{ name: '시금치', days_overdue: 5, expiry_date: '2026-07-01', imageUrl: 'https://picsum.photos/100/100?random=1' },
-	{ name: '닭가슴살', days_overdue: 4, expiry_date: '2026-07-02', imageUrl: 'https://picsum.photos/100/100?random=2' },
-	{ name: '우유', days_overdue: 3, expiry_date: '2026-07-03', imageUrl: 'https://picsum.photos/100/100?random=3' },
-	{ name: '두부', days_overdue: 2, expiry_date: '2026-07-04', imageUrl: 'https://picsum.photos/100/100?random=4' },
-	{ name: '계란', days_overdue: 1, expiry_date: '2026-07-05', imageUrl: 'https://picsum.photos/100/100?random=5' },
+	{ name: '시금치', days_overdue: 5, expiry_date: '2026-07-01', imageUrl: unsplashUrl('spinach') },
+	{ name: '닭가슴살', days_overdue: 4, expiry_date: '2026-07-02', imageUrl: unsplashUrl('chicken breast') },
+	{ name: '우유', days_overdue: 3, expiry_date: '2026-07-03', imageUrl: unsplashUrl('milk') },
+	{ name: '두부', days_overdue: 2, expiry_date: '2026-07-04', imageUrl: unsplashUrl('tofu') },
+	{ name: '계란', days_overdue: 1, expiry_date: '2026-07-05', imageUrl: unsplashUrl('egg') },
 ];
 
 // 냉장고 전체 재료(만료 제외) 목업 — '냉장고 관리'에서 요약 표시용
 const FRESH_ITEMS = [
-	{ name: '양파', status: '신선', detail: '12일 남음', imageUrl: 'https://picsum.photos/100/100?random=10' },
-	{ name: '당근', status: '신선', detail: '9일 남음', imageUrl: 'https://picsum.photos/100/100?random=11' },
-	{ name: '고추장', status: '신선', detail: '40일 남음', imageUrl: 'https://picsum.photos/100/100?random=12' },
-	{ name: '간장', status: '신선', detail: '120일 남음', imageUrl: 'https://picsum.photos/100/100?random=13' },
-	{ name: '대파', status: '임박', detail: '2일 남음', imageUrl: 'https://picsum.photos/100/100?random=14' },
+	{ name: '양파', status: '신선', detail: '12일 남음', imageUrl: unsplashUrl('onion') },
+	{ name: '당근', status: '신선', detail: '9일 남음', imageUrl: unsplashUrl('carrot') },
+	{ name: '고추장', status: '신선', detail: '40일 남음', imageUrl: unsplashUrl('gochujang') },
+	{ name: '간장', status: '신선', detail: '120일 남음', imageUrl: unsplashUrl('soy sauce') },
+	{ name: '대파', status: '임박', detail: '2일 남음', imageUrl: unsplashUrl('leek') },
 ];
 
 const MAX_LIST_ITEMS = 4; // 카카오 listCard 최대 5행
