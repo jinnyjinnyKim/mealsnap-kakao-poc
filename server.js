@@ -62,9 +62,27 @@ function buildRebuyResponse() {
 	return wrap([expiredListCard(EXPIRED_ITEMS, '재구매가 필요한 재료')]);
 }
 
-// [냉장고 관리] simpleText 테스트
+// [냉장고 관리] 만료 항목을 단일 listCard 로 반환.
 function buildFridgeResponse() {
-	return wrap([{ simpleText: { text: '냉장고 목록 테스트' } }]);
+	const total = EXPIRED_ITEMS.length + FRESH_ITEMS.length;
+	const approaching = FRESH_ITEMS.filter((i) => i.status === '임박').length;
+	const fresh = FRESH_ITEMS.filter((i) => i.status === '신선').length;
+
+	if (EXPIRED_ITEMS.length === 0) {
+		// 만료 항목이 없으면 신선 목록을 보여준다(역시 단일 listCard).
+		return wrap([{
+			listCard: {
+				header: { title: `냉장고 재료 ${total}개 모두 신선` },
+				items: FRESH_ITEMS.slice(0, MAX_LIST_ITEMS).map((it) => ({
+					title: it.name,
+					description: `${it.status} ${it.detail}`,
+				})),
+			},
+		}]);
+	}
+
+	const headerTitle = `냉장고 ${total}개 만료 ${EXPIRED_ITEMS.length} 임박 ${approaching} 신선 ${fresh}`;
+	return wrap([expiredListCard(EXPIRED_ITEMS, headerTitle)]);
 }
 
 function parseIntent(body) {
