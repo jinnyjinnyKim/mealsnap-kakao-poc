@@ -34,12 +34,13 @@ const generateSvgImage = (bgColor) => {
 // ── 그럴듯한 고정 목업: 유통기한 지난 식재료 (오늘 기준 과거 날짜) ──
 // days_overdue = 며칠 지났는지(양수). 실제 앱에선 DB의 expiry_date 로 계산되지만 여기선 고정.
 
-// 상태별 이미지 URL (동적 생성 엔드포인트)
+// 상태별 이미지 URL (동적 생성 엔드포인트 + 캐시 버스팅)
 const getImageUrl = (req, status) => {
 	// Render의 X-Forwarded-* 헤더 우선, 없으면 직접 요청 정보 사용
 	const protocol = req.get('x-forwarded-proto') || req.protocol || 'https';
 	const host = req.get('x-forwarded-host') || req.get('host') || `localhost:${PORT}`;
-	const url = `${protocol}://${host}/api/image/${status}`;
+	const timestamp = Date.now();
+	const url = `${protocol}://${host}/api/image/${status}?v=${timestamp}`;
 	console.log(`[getImageUrl] status=${status}, protocol=${protocol}, host=${host}, url=${url}`);
 	return url;
 };
@@ -206,14 +207,14 @@ app.get('/api/health', (_req, res) => {
 	res.json({ success: true, data: { status: 'ok', poc: true, timestamp: new Date().toISOString() } });
 });
 
-// ── 동적 이미지 엔드포인트 (SVG → PNG 변환) ──
+// ── 동적 이미지 엔드포인트 (SVG → PNG 변환, 캐시 비활성화) ──
 app.get('/api/image/:status', async (req, res) => {
 	const { status } = req.params;
 
 	const config = {
-		expired: { bgColor: '#E63946', text: '만료', textColor: '#fff' },
-		approaching: { bgColor: '#FFD93D', text: '임박', textColor: '#000' },
-		fresh: { bgColor: '#6BCB77', text: '신선', textColor: '#fff' },
+		expired: { bgColor: '#E63946' },
+		approaching: { bgColor: '#FFD93D' },
+		fresh: { bgColor: '#6BCB77' },
 	};
 
 	const cfg = config[status];
@@ -225,6 +226,9 @@ app.get('/api/image/:status', async (req, res) => {
 		const svg = generateSvgImage(cfg.bgColor);
 		const pngBuffer = await sharp(Buffer.from(svg)).png().toBuffer();
 		res.type('image/png');
+		res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+		res.set('Pragma', 'no-cache');
+		res.set('Expires', '0');
 		res.send(pngBuffer);
 	} catch (err) {
 		console.error('[image error]', err.message);
