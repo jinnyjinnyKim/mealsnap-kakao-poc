@@ -23,20 +23,11 @@ app.use((req, _res, next) => {
 
 const PORT = process.env.PORT || 3000; // Render 는 PORT 를 주입한다.
 
-// ── SVG 이미지 생성 함수 ──
-const generateSvgImage = (bgColor, text, textColor = '#fff') => {
+// ── SVG 이미지 생성 함수 (순색만) ──
+const generateSvgImage = (bgColor) => {
 	return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
-  <defs>
-    <style>
-      .bg-rect { fill: ${bgColor}; }
-      .circle-bg { fill: rgba(255, 255, 255, 0.2); }
-      .status-text { font-family: Arial, sans-serif; font-size: 36px; font-weight: bold; fill: ${textColor}; text-anchor: middle; dominant-baseline: middle; }
-    </style>
-  </defs>
-  <rect class="bg-rect" width="200" height="200"/>
-  <circle class="circle-bg" cx="100" cy="100" r="80"/>
-  <text class="status-text" x="100" y="100">${text}</text>
+  <rect fill="${bgColor}" width="200" height="200"/>
 </svg>`;
 };
 
@@ -231,7 +222,7 @@ app.get('/api/image/:status', async (req, res) => {
 	}
 
 	try {
-		const svg = generateSvgImage(cfg.bgColor, cfg.text, cfg.textColor);
+		const svg = generateSvgImage(cfg.bgColor);
 		const pngBuffer = await sharp(Buffer.from(svg)).png().toBuffer();
 		res.type('image/png');
 		res.send(pngBuffer);
