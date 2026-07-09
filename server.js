@@ -13,7 +13,15 @@ const { createCanvas } = require('canvas');
 const app = express();
 app.use(express.json({ limit: '1mb' }));
 app.use(express.static('public')); // 정적 이미지 서빙
-app.use((req, _res, next) => { console.log(`${new Date().toISOString()} ${req.method} ${req.url}`); next(); });
+
+// 요청 헤더 디버그
+app.use((req, _res, next) => {
+	console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
+	if (req.method === 'POST' && req.url === '/api/kakao/webhook') {
+		console.log(`  protocol=${req.protocol}, host=${req.get('host')}, x-forwarded-proto=${req.get('x-forwarded-proto')}, x-forwarded-host=${req.get('x-forwarded-host')}`);
+	}
+	next();
+});
 
 const PORT = process.env.PORT || 3000; // Render 는 PORT 를 주입한다.
 
@@ -59,9 +67,12 @@ generateImage('fresh.png', '#A8DADC', '신선', '#1D3557');
 
 // 상태별 이미지 URL (동적 생성 엔드포인트)
 const getImageUrl = (req, status) => {
-	const protocol = req.protocol || 'http';
-	const host = req.get('host') || `localhost:${PORT}`;
-	return `${protocol}://${host}/api/image/${status}`;
+	// Render의 X-Forwarded-* 헤더 우선, 없으면 직접 요청 정보 사용
+	const protocol = req.get('x-forwarded-proto') || req.protocol || 'https';
+	const host = req.get('x-forwarded-host') || req.get('host') || `localhost:${PORT}`;
+	const url = `${protocol}://${host}/api/image/${status}`;
+	console.log(`[getImageUrl] status=${status}, protocol=${protocol}, host=${host}, url=${url}`);
+	return url;
 };
 
 const EXPIRED_ITEMS = [
