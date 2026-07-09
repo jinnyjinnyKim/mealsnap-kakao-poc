@@ -6,9 +6,6 @@
 // 카카오 응답 스키마/쿠팡 링크 로직은 본 서버(backend/src/services/kakaoService.js)와 동일하게 맞췄다.
 
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
-const { createCanvas } = require('canvas');
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
@@ -25,42 +22,22 @@ app.use((req, _res, next) => {
 
 const PORT = process.env.PORT || 3000; // Render 는 PORT 를 주입한다.
 
-// ── 서버 시작 시 이미지 생성 ──
-const publicDir = path.join(__dirname, 'public');
-if (!fs.existsSync(publicDir)) {
-	fs.mkdirSync(publicDir);
-}
-
-const generateImage = (filename, bgColor, text, textColor = '#fff') => {
-	const canvas = createCanvas(200, 200);
-	const ctx = canvas.getContext('2d');
-
-	// 배경
-	ctx.fillStyle = bgColor;
-	ctx.fillRect(0, 0, 200, 200);
-
-	// 동그란 배경
-	ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-	ctx.beginPath();
-	ctx.arc(100, 100, 80, 0, Math.PI * 2);
-	ctx.fill();
-
-	// 텍스트
-	ctx.fillStyle = textColor;
-	ctx.font = 'bold 36px Arial';
-	ctx.textAlign = 'center';
-	ctx.textBaseline = 'middle';
-	ctx.fillText(text, 100, 100);
-
-	const buffer = canvas.toBuffer('image/png');
-	fs.writeFileSync(path.join(publicDir, filename), buffer);
-	console.log(`✓ 이미지 생성: ${filename}`);
+// ── SVG 이미지 생성 함수 ──
+const generateSvgImage = (bgColor, text, textColor = '#fff') => {
+	return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <defs>
+    <style>
+      .bg-rect { fill: ${bgColor}; }
+      .circle-bg { fill: rgba(255, 255, 255, 0.2); }
+      .status-text { font-family: Arial, sans-serif; font-size: 36px; font-weight: bold; fill: ${textColor}; text-anchor: middle; dominant-baseline: middle; }
+    </style>
+  </defs>
+  <rect class="bg-rect" width="200" height="200"/>
+  <circle class="circle-bg" cx="100" cy="100" r="80"/>
+  <text class="status-text" x="100" y="100">${text}</text>
+</svg>`;
 };
-
-// 시작 시 이미지 생성
-generateImage('expired.png', '#E63946', '만료', '#fff');
-generateImage('approaching.png', '#F1FAEE', '임박', '#E63946');
-generateImage('fresh.png', '#A8DADC', '신선', '#1D3557');
 
 // ── 그럴듯한 고정 목업: 유통기한 지난 식재료 (오늘 기준 과거 날짜) ──
 // days_overdue = 며칠 지났는지(양수). 실제 앱에선 DB의 expiry_date 로 계산되지만 여기선 고정.
@@ -186,6 +163,7 @@ function parseIntent(body) {
 // 카카오 스킬 webhook (실제 백엔드와 동일 경로)
 app.post('/api/kakao/webhook', (req, res) => {
 	try {
+		console.log('🔔 [WEBHOOK] 요청 받음!');
 		console.log('[webhook] full request body=', JSON.stringify(req.body, null, 2));
 
 		const utterance =
@@ -206,8 +184,11 @@ app.post('/api/kakao/webhook', (req, res) => {
 			response.template.outputs.map((o) => Object.keys(o)[0]).join(',')
 		);
 
-		// 응답 전체 로그
-		console.log('[webhook] response=', JSON.stringify(response, null, 2));
+		// 첫 번째 이미지 URL만 로그
+		const firstImageUrl = response.template?.outputs?.[0]?.carousel?.items?.[0]?.items?.[0]?.imageUrl
+			|| response.template?.outputs?.[0]?.listCard?.items?.[0]?.imageUrl
+			|| 'N/A';
+		console.log('✅ [webhook] RESPONSE 이미지 URL:', firstImageUrl);
 
 		res.json(response);
 	} catch (err) {
@@ -233,7 +214,7 @@ app.get('/api/health', (_req, res) => {
 	res.json({ success: true, data: { status: 'ok', poc: true, timestamp: new Date().toISOString() } });
 });
 
-// ── 동적 이미지 엔드포인트 (재구매/만료=red, 임박=yellow, 신선=green) ──
+// ── 동적 이미지 엔드포인트 (SVG로 생성) ──
 app.get('/api/image/:status', (req, res) => {
 	const { status } = req.params;
 
@@ -248,28 +229,9 @@ app.get('/api/image/:status', (req, res) => {
 		return res.status(400).json({ error: 'Invalid status' });
 	}
 
-	const canvas = createCanvas(200, 200);
-	const ctx = canvas.getContext('2d');
-
-	// 배경
-	ctx.fillStyle = cfg.bgColor;
-	ctx.fillRect(0, 0, 200, 200);
-
-	// 동그란 배경
-	ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-	ctx.beginPath();
-	ctx.arc(100, 100, 80, 0, Math.PI * 2);
-	ctx.fill();
-
-	// 텍스트
-	ctx.fillStyle = cfg.textColor;
-	ctx.font = 'bold 36px Arial';
-	ctx.textAlign = 'center';
-	ctx.textBaseline = 'middle';
-	ctx.fillText(cfg.text, 100, 100);
-
-	res.type('image/png');
-	res.send(canvas.toBuffer('image/png'));
+	const svg = generateSvgImage(cfg.bgColor, cfg.text, cfg.textColor);
+	res.type('image/svg+xml');
+	res.send(svg);
 });
 
 // 루트 안내 (브라우저로 열었을 때)
