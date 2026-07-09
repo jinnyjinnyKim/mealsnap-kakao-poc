@@ -6,6 +6,7 @@
 // 카카오 응답 스키마/쿠팡 링크 로직은 본 서버(backend/src/services/kakaoService.js)와 동일하게 맞췄다.
 
 const express = require('express');
+const sharp = require('sharp');
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
@@ -214,8 +215,8 @@ app.get('/api/health', (_req, res) => {
 	res.json({ success: true, data: { status: 'ok', poc: true, timestamp: new Date().toISOString() } });
 });
 
-// ── 동적 이미지 엔드포인트 (SVG로 생성) ──
-app.get('/api/image/:status', (req, res) => {
+// ── 동적 이미지 엔드포인트 (SVG → PNG 변환) ──
+app.get('/api/image/:status', async (req, res) => {
 	const { status } = req.params;
 
 	const config = {
@@ -229,9 +230,15 @@ app.get('/api/image/:status', (req, res) => {
 		return res.status(400).json({ error: 'Invalid status' });
 	}
 
-	const svg = generateSvgImage(cfg.bgColor, cfg.text, cfg.textColor);
-	res.type('image/svg+xml');
-	res.send(svg);
+	try {
+		const svg = generateSvgImage(cfg.bgColor, cfg.text, cfg.textColor);
+		const pngBuffer = await sharp(Buffer.from(svg)).png().toBuffer();
+		res.type('image/png');
+		res.send(pngBuffer);
+	} catch (err) {
+		console.error('[image error]', err.message);
+		res.status(500).json({ error: 'Image generation failed' });
+	}
 });
 
 // 루트 안내 (브라우저로 열었을 때)
