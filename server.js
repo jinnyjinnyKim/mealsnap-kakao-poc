@@ -6,6 +6,9 @@
 // 카카오 응답 스키마/쿠팡 링크 로직은 본 서버(backend/src/services/kakaoService.js)와 동일하게 맞췄다.
 
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const { createCanvas } = require('canvas');
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
@@ -14,14 +17,51 @@ app.use((req, _res, next) => { console.log(`${new Date().toISOString()} ${req.me
 
 const PORT = process.env.PORT || 3000; // Render 는 PORT 를 주입한다.
 
+// ── 서버 시작 시 이미지 생성 ──
+const publicDir = path.join(__dirname, 'public');
+if (!fs.existsSync(publicDir)) {
+	fs.mkdirSync(publicDir);
+}
+
+const generateImage = (filename, bgColor, text, textColor = '#fff') => {
+	const canvas = createCanvas(200, 200);
+	const ctx = canvas.getContext('2d');
+
+	// 배경
+	ctx.fillStyle = bgColor;
+	ctx.fillRect(0, 0, 200, 200);
+
+	// 동그란 배경
+	ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+	ctx.beginPath();
+	ctx.arc(100, 100, 80, 0, Math.PI * 2);
+	ctx.fill();
+
+	// 텍스트
+	ctx.fillStyle = textColor;
+	ctx.font = 'bold 36px Arial';
+	ctx.textAlign = 'center';
+	ctx.textBaseline = 'middle';
+	ctx.fillText(text, 100, 100);
+
+	const buffer = canvas.toBuffer('image/png');
+	fs.writeFileSync(path.join(publicDir, filename), buffer);
+	console.log(`✓ 이미지 생성: ${filename}`);
+};
+
+// 시작 시 이미지 생성
+generateImage('expired.png', '#E63946', '만료', '#fff');
+generateImage('approaching.png', '#F1FAEE', '임박', '#E63946');
+generateImage('fresh.png', '#A8DADC', '신선', '#1D3557');
+
 // ── 그럴듯한 고정 목업: 유통기한 지난 식재료 (오늘 기준 과거 날짜) ──
 // days_overdue = 며칠 지났는지(양수). 실제 앱에선 DB의 expiry_date 로 계산되지만 여기선 고정.
 
-// 상태별 공통 이미지 URL (요청 시 호스트 정보로 절대 URL 생성)
-const getImageUrl = (req, filename) => {
+// 상태별 이미지 URL (동적 생성 엔드포인트)
+const getImageUrl = (req, status) => {
 	const protocol = req.protocol || 'http';
 	const host = req.get('host') || `localhost:${PORT}`;
-	return `${protocol}://${host}/${filename}`;
+	return `${protocol}://${host}/api/image/${status}`;
 };
 
 const EXPIRED_ITEMS = [
@@ -66,7 +106,7 @@ function expiredListCard(items, headerTitle, req) {
 			items: shown.map((it) => ({
 				title: it.name,
 				description: `${it.days_overdue}일 지남 (${it.expiry_date})`,
-				imageUrl: getImageUrl(req, 'expired.png'),
+				imageUrl: getImageUrl(req, 'expired'),
 				link: { web: coupangUrl(it.name) },
 			})),
 		},
@@ -94,7 +134,7 @@ function buildFridgeResponse(req) {
 		items: EXPIRED_ITEMS.slice(0, MAX_LIST_ITEMS).map((it) => ({
 			title: it.name,
 			description: `${it.days_overdue}일 지남 (${it.expiry_date})`,
-			imageUrl: getImageUrl(req, 'expired.png'),
+			imageUrl: getImageUrl(req, 'expired'),
 			link: { web: coupangUrl(it.name) },
 		})),
 	});
@@ -106,7 +146,7 @@ function buildFridgeResponse(req) {
 			items: approaching.slice(0, MAX_LIST_ITEMS).map((it) => ({
 				title: it.name,
 				description: `${it.detail}`,
-				imageUrl: getImageUrl(req, 'approaching.png'),
+				imageUrl: getImageUrl(req, 'approaching'),
 			})),
 		});
 	}
@@ -118,7 +158,7 @@ function buildFridgeResponse(req) {
 			items: fresh.slice(0, MAX_LIST_ITEMS).map((it) => ({
 				title: it.name,
 				description: `${it.detail}`,
-				imageUrl: getImageUrl(req, 'fresh.png'),
+				imageUrl: getImageUrl(req, 'fresh'),
 			})),
 		});
 	}
@@ -180,6 +220,45 @@ app.post('/api/kakao/webhook', (req, res) => {
 // 헬스 체크 (Render/카카오 확인용)
 app.get('/api/health', (_req, res) => {
 	res.json({ success: true, data: { status: 'ok', poc: true, timestamp: new Date().toISOString() } });
+});
+
+// ── 동적 이미지 엔드포인트 (재구매/만료=red, 임박=yellow, 신선=green) ──
+app.get('/api/image/:status', (req, res) => {
+	const { status } = req.params;
+
+	const config = {
+		expired: { bgColor: '#E63946', text: '만료', textColor: '#fff' },
+		approaching: { bgColor: '#FFD93D', text: '임박', textColor: '#000' },
+		fresh: { bgColor: '#6BCB77', text: '신선', textColor: '#fff' },
+	};
+
+	const cfg = config[status];
+	if (!cfg) {
+		return res.status(400).json({ error: 'Invalid status' });
+	}
+
+	const canvas = createCanvas(200, 200);
+	const ctx = canvas.getContext('2d');
+
+	// 배경
+	ctx.fillStyle = cfg.bgColor;
+	ctx.fillRect(0, 0, 200, 200);
+
+	// 동그란 배경
+	ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+	ctx.beginPath();
+	ctx.arc(100, 100, 80, 0, Math.PI * 2);
+	ctx.fill();
+
+	// 텍스트
+	ctx.fillStyle = cfg.textColor;
+	ctx.font = 'bold 36px Arial';
+	ctx.textAlign = 'center';
+	ctx.textBaseline = 'middle';
+	ctx.fillText(cfg.text, 100, 100);
+
+	res.type('image/png');
+	res.send(canvas.toBuffer('image/png'));
 });
 
 // 루트 안내 (브라우저로 열었을 때)

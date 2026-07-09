@@ -11,7 +11,7 @@
     "node": ">=18"
   },
   "dependencies": {
-    "express": "^4.21.0",
-    "canvas": "^2.11.2"
+    "canvas": "^2.11.2",
+    "express": "^4.21.0"
   }
 }
