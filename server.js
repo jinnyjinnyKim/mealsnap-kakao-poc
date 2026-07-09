@@ -21,7 +21,7 @@ app.use((req, _res, next) => {
 	next();
 });
 
-const PORT = process.env.PORT || 3000; // Render 는 PORT 를 주입한다.
+const PORT = process.env.PORT || 4000; // Render 는 PORT 를 주입한다. 로컬: 4000
 
 // ── SVG 이미지 생성 함수 (순색만) ──
 const generateSvgImage = (bgColor) => {
@@ -72,6 +72,22 @@ function coupangUrl(productName) {
 const QUICK_REPLIES = [
 	{ label: '냉장고 관리', action: 'message', messageText: '냉장고관리' },
 	{ label: '재료 재구매', action: 'message', messageText: '재료 재구매' },
+	{ label: '가전제어', action: 'message', messageText: '가전제어' },
+];
+
+// 가전 기기 목록
+const APPLIANCES = [
+	{ id: 'air_purifier', name: '공기청정기', icon: '💨', color: '#4ECDC4', status: 'on' },
+	{ id: 'robot_vacuum', name: '로봇청소기', icon: '🤖', color: '#45B7D1', status: 'on' },
+	{ id: 'air_conditioner', name: '에어컨', icon: '❄️', color: '#96CEB4', status: 'on' },
+	{ id: 'washer', name: '세탁기', icon: '🌊', color: '#FFEAA7', status: 'off' },
+	{ id: 'tv', name: 'TV', icon: '📺', color: '#DDA0DD', status: 'on' },
+];
+
+const APPLIANCE_QUICK_REPLIES = [
+	{ label: '냉장고 관리', action: 'message', messageText: '냉장고관리' },
+	{ label: '재료 재구매', action: 'message', messageText: '재료 재구매' },
+	{ label: '가전제어', action: 'message', messageText: '가전제어' },
 ];
 
 function wrap(outputs) {
@@ -147,8 +163,48 @@ function buildFridgeResponse(req) {
 	return { version: '2.0', template: { outputs: [{ carousel: { type: 'listCard', items: carouselItems } }], quickReplies: QUICK_REPLIES } };
 }
 
+// 가전 제어 응답 생성
+function buildApplianceResponse(req) {
+	const carouselItems = APPLIANCES.map(appliance => ({
+		header: { title: `${appliance.icon} ${appliance.name}` },
+		items: [
+			{
+				title: appliance.name,
+				description: `상태: ${appliance.status === 'on' ? '🟢 켜짐' : '🔴 꺼짐'}`,
+				imageUrl: getImageUrl(req, `appliance_${appliance.id}`),
+				buttons: [
+					{
+						action: 'message',
+						label: '시작',
+						messageText: `${appliance.name} 시작해줘`
+					},
+					{
+						action: 'message',
+						label: '상태확인',
+						messageText: `${appliance.name} 상태`
+					},
+					{
+						action: 'message',
+						label: '종료',
+						messageText: `${appliance.name} 꺼줘`
+					}
+				]
+			}
+		]
+	}));
+
+	return {
+		version: '2.0',
+		template: {
+			outputs: [{ carousel: { type: 'listCard', items: carouselItems } }],
+			quickReplies: APPLIANCE_QUICK_REPLIES
+		}
+	};
+}
+
 function parseIntent(body) {
 	const utterance = (body && body.userRequest && body.userRequest.utterance) || '';
+	if (/가전|제어|공기청정|청소기|에어컨|세탁|TV/.test(utterance)) return 'appliance';
 	if (/재구매|구매|장보기|주문|쿠팡/.test(utterance)) return 'rebuy';
 	return 'fridge';
 }
@@ -168,7 +224,14 @@ app.post('/api/kakao/webhook', (req, res) => {
 		);
 
 		const intent = parseIntent(req.body);
-		const response = intent === 'rebuy' ? buildRebuyResponse(req) : buildFridgeResponse(req);
+		let response;
+		if (intent === 'rebuy') {
+			response = buildRebuyResponse(req);
+		} else if (intent === 'appliance') {
+			response = buildApplianceResponse(req);
+		} else {
+			response = buildFridgeResponse(req);
+		}
 
 		console.log(
 			'[webhook] intent=',
@@ -211,19 +274,40 @@ app.get('/api/health', (_req, res) => {
 app.get('/api/image/:status', async (req, res) => {
 	const { status } = req.params;
 
-	const config = {
+	// 냉장고 상태별 이미지
+	const statusConfig = {
 		expired: { bgColor: '#E63946' },
 		approaching: { bgColor: '#FFD93D' },
 		fresh: { bgColor: '#6BCB77' },
 	};
 
-	const cfg = config[status];
+	// 가전 기기 이미지
+	const applianceConfig = {
+		appliance_air_purifier: { bgColor: '#4ECDC4', emoji: '💨' },
+		appliance_robot_vacuum: { bgColor: '#45B7D1', emoji: '🤖' },
+		appliance_air_conditioner: { bgColor: '#96CEB4', emoji: '❄️' },
+		appliance_washer: { bgColor: '#FFEAA7', emoji: '🌊' },
+		appliance_tv: { bgColor: '#DDA0DD', emoji: '📺' },
+	};
+
+	const cfg = statusConfig[status] || applianceConfig[status];
 	if (!cfg) {
 		return res.status(400).json({ error: 'Invalid status' });
 	}
 
 	try {
-		const svg = generateSvgImage(cfg.bgColor);
+		// 가전 기기는 이모지 표시, 냉장고는 색상만 표시
+		let svg;
+		if (cfg.emoji) {
+			svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <rect fill="${cfg.bgColor}" width="200" height="200"/>
+  <text x="100" y="100" font-size="80" text-anchor="middle" dominant-baseline="middle">${cfg.emoji}</text>
+</svg>`;
+		} else {
+			svg = generateSvgImage(cfg.bgColor);
+		}
+
 		const pngBuffer = await sharp(Buffer.from(svg)).png().toBuffer();
 		res.type('image/png');
 		res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
