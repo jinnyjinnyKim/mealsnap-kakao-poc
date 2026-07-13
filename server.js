@@ -169,7 +169,7 @@ function buildApplianceResponse(req) {
 		title: appliance.name,
 		description: `상태: ${appliance.status === 'on' ? '켜짐' : '꺼짐'}`,
 		thumbnail: {
-			imageUrl: getImageUrl(req, `appliance_${appliance.id}.jpg`)
+			imageUrl: getImageUrl(req, `appliance_${appliance.id}.png`)
 		},
 		buttons: [
 			{
