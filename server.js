@@ -175,17 +175,12 @@ function buildApplianceResponse(req) {
 		buttons: [
 			{
 				action: 'message',
-				label: '🟢 켜기',
+				label: '켜기',
 				messageText: `${appliance.name} 켜줘`
 			},
 			{
 				action: 'message',
-				label: '❓ 상태',
-				messageText: `${appliance.name} 상태`
-			},
-			{
-				action: 'message',
-				label: '🔴 끄기',
+				label: '끄기',
 				messageText: `${appliance.name} 꺼줘`
 			}
 		]
