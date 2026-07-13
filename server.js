@@ -63,7 +63,6 @@ function coupangUrl(productName) {
 const QUICK_REPLIES = [
 	{ label: '냉장고 관리', action: 'message', messageText: '냉장고관리' },
 	{ label: '재료 재구매', action: 'message', messageText: '재료 재구매' },
-	{ label: '가전제어', action: 'message', messageText: '가전제어' },
 ];
 
 // 가전 기기 목록
@@ -132,7 +131,7 @@ function buildFridgeResponse(req) {
 		items: EXPIRED_ITEMS.slice(0, MAX_LIST_ITEMS).map((it) => ({
 			title: it.name,
 			description: `${it.days_overdue}일 지남 (${it.expiry_date})`,
-			imageUrl: getImageUrl(req, 'expired'),
+			imageUrl: getImageUrl(req, 'expired.png'),
 			link: { web: coupangUrl(it.name) },
 		})),
 	});
