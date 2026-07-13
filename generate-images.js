@@ -1,43 +1,60 @@
+const sharp = require('sharp');
 const fs = require('fs');
 const path = require('path');
-const { createCanvas } = require('canvas');
 
 const publicDir = path.join(__dirname, 'public');
 if (!fs.existsSync(publicDir)) {
-	fs.mkdirSync(publicDir);
+	fs.mkdirSync(publicDir, { recursive: true });
 }
 
-// 상태별 이미지 생성 (더 큰 사이즈, 더 시각적)
-const generateImage = (filename, bgColor, text, textColor = '#fff') => {
-	const canvas = createCanvas(200, 200);
-	const ctx = canvas.getContext('2d');
+// SVG를 PNG로 변환하는 함수
+async function generateImage(filename, bgColor, emoji, label) {
+	const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <rect fill="${bgColor}" width="200" height="200"/>
+  <text x="100" y="70" font-size="60" text-anchor="middle" dominant-baseline="middle">${emoji}</text>
+  <text x="100" y="130" font-size="20" font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="middle">${label}</text>
+</svg>`;
 
-	// 배경
-	ctx.fillStyle = bgColor;
-	ctx.fillRect(0, 0, 200, 200);
+	try {
+		await sharp(Buffer.from(svg)).png().toFile(path.join(publicDir, filename));
+		console.log(`✓ ${filename} 생성됨`);
+	} catch (err) {
+		console.error(`✗ ${filename} 생성 실패:`, err.message);
+	}
+}
 
-	// 동그란 배경 (상태 표시)
-	ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-	ctx.beginPath();
-	ctx.arc(100, 100, 80, 0, Math.PI * 2);
-	ctx.fill();
+// 냉장고 상태 이미지
+async function generateRefrigeratorImages() {
+	await generateImage('expired.png', '#E63946', '❌', '만료');
+	await generateImage('approaching.png', '#FFD93D', '⚠️', '임박');
+	await generateImage('fresh.png', '#6BCB77', '✓', '신선');
+}
 
-	// 텍스트
-	ctx.fillStyle = textColor;
-	ctx.font = 'bold 36px Arial';
-	ctx.textAlign = 'center';
-	ctx.textBaseline = 'middle';
-	ctx.fillText(text, 100, 100);
+// 가전 기기 이미지
+async function generateApplianceImages() {
+	const appliances = [
+		{ id: 'air_purifier', emoji: '💨', label: '공기청정기', color: '#4ECDC4' },
+		{ id: 'robot_vacuum', emoji: '🤖', label: '로봇청소기', color: '#45B7D1' },
+		{ id: 'air_conditioner', emoji: '❄️', label: '에어컨', color: '#96CEB4' },
+		{ id: 'washer', emoji: '🌊', label: '세탁기', color: '#FFEAA7' },
+		{ id: 'tv', emoji: '📺', label: 'TV', color: '#DDA0DD' },
+	];
 
-	// 파일로 저장
-	const buffer = canvas.toBuffer('image/png');
-	fs.writeFileSync(path.join(publicDir, filename), buffer);
-	console.log(`✓ ${filename} 생성됨`);
-};
+	for (const app of appliances) {
+		await generateImage(`appliance_${app.id}.png`, app.color, app.emoji, app.label);
+	}
+}
 
-// 상태별 이미지 생성
-generateImage('expired.png', '#E63946', '만료', '#fff');
-generateImage('approaching.png', '#F1FAEE', '임박', '#E63946');
-generateImage('fresh.png', '#A8DADC', '신선', '#1D3557');
+// 모든 이미지 생성
+async function main() {
+	console.log('🖼️  이미지 생성 시작...');
+	await generateRefrigeratorImages();
+	await generateApplianceImages();
+	console.log('✅ 모든 이미지 생성 완료!');
+}
 
-console.log('이미지 생성 완료!');
+main().catch(err => {
+	console.error('이미지 생성 중 오류:', err);
+	process.exit(1);
+});

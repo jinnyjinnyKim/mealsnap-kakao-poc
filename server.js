@@ -6,7 +6,6 @@
 // 카카오 응답 스키마/쿠팡 링크 로직은 본 서버(backend/src/services/kakaoService.js)와 동일하게 맞췄다.
 
 const express = require('express');
-const sharp = require('sharp');
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
@@ -23,25 +22,17 @@ app.use((req, _res, next) => {
 
 const PORT = process.env.PORT || 4000; // Render 는 PORT 를 주입한다. 로컬: 4000
 
-// ── SVG 이미지 생성 함수 (순색만) ──
-const generateSvgImage = (bgColor) => {
-	return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
-  <rect fill="${bgColor}" width="200" height="200"/>
-</svg>`;
-};
 
 // ── 그럴듯한 고정 목업: 유통기한 지난 식재료 (오늘 기준 과거 날짜) ──
 // days_overdue = 며칠 지났는지(양수). 실제 앱에선 DB의 expiry_date 로 계산되지만 여기선 고정.
 
-// 상태별 이미지 URL (동적 생성 엔드포인트 + 캐시 버스팅)
-const getImageUrl = (req, status) => {
+// 상태별 이미지 URL (static 파일)
+const getImageUrl = (req, filename) => {
 	// Render의 X-Forwarded-* 헤더 우선, 없으면 직접 요청 정보 사용
 	const protocol = req.get('x-forwarded-proto') || req.protocol || 'https';
 	const host = req.get('x-forwarded-host') || req.get('host') || `localhost:${PORT}`;
-	const timestamp = Date.now();
-	const url = `${protocol}://${host}/api/image/${status}?v=${timestamp}`;
-	console.log(`[getImageUrl] status=${status}, protocol=${protocol}, host=${host}, url=${url}`);
+	const url = `${protocol}://${host}/${filename}`;
+	console.log(`[getImageUrl] filename=${filename}, url=${url}`);
 	return url;
 };
 
@@ -84,11 +75,6 @@ const APPLIANCES = [
 	{ id: 'tv', name: 'TV', icon: '📺', color: '#DDA0DD', status: 'on' },
 ];
 
-const APPLIANCE_QUICK_REPLIES = [
-	{ label: '냉장고 관리', action: 'message', messageText: '냉장고관리' },
-	{ label: '재료 재구매', action: 'message', messageText: '재료 재구매' },
-	{ label: '가전제어', action: 'message', messageText: '가전제어' },
-];
 
 function wrap(outputs) {
 	return { version: '2.0', template: { outputs, quickReplies: QUICK_REPLIES } };
@@ -103,7 +89,7 @@ function expiredListCard(items, headerTitle, req) {
 			items: shown.map((it) => ({
 				title: it.name,
 				description: `${it.days_overdue}일 지남 (${it.expiry_date})`,
-				imageUrl: getImageUrl(req, 'expired'),
+				imageUrl: getImageUrl(req, 'expired.png'),
 				link: { web: coupangUrl(it.name) },
 			})),
 		},
@@ -143,7 +129,7 @@ function buildFridgeResponse(req) {
 			items: approaching.slice(0, MAX_LIST_ITEMS).map((it) => ({
 				title: it.name,
 				description: `${it.detail}`,
-				imageUrl: getImageUrl(req, 'approaching'),
+				imageUrl: getImageUrl(req, 'approaching.png'),
 			})),
 		});
 	}
@@ -155,7 +141,7 @@ function buildFridgeResponse(req) {
 			items: fresh.slice(0, MAX_LIST_ITEMS).map((it) => ({
 				title: it.name,
 				description: `${it.detail}`,
-				imageUrl: getImageUrl(req, 'fresh'),
+				imageUrl: getImageUrl(req, 'fresh.png'),
 			})),
 		});
 	}
@@ -171,21 +157,21 @@ function buildApplianceResponse(req) {
 			{
 				title: appliance.name,
 				description: `상태: ${appliance.status === 'on' ? '🟢 켜짐' : '🔴 꺼짐'}`,
-				imageUrl: getImageUrl(req, `appliance_${appliance.id}`),
+				imageUrl: getImageUrl(req, `appliance_${appliance.id}.png`),
 				buttons: [
 					{
 						action: 'message',
-						label: '시작',
-						messageText: `${appliance.name} 시작해줘`
+						label: '🟢 켜기',
+						messageText: `${appliance.name} 켜줘`
 					},
 					{
 						action: 'message',
-						label: '상태확인',
+						label: '❓ 상태확인',
 						messageText: `${appliance.name} 상태`
 					},
 					{
 						action: 'message',
-						label: '종료',
+						label: '🔴 끄기',
 						messageText: `${appliance.name} 꺼줘`
 					}
 				]
@@ -197,15 +183,32 @@ function buildApplianceResponse(req) {
 		version: '2.0',
 		template: {
 			outputs: [{ carousel: { type: 'listCard', items: carouselItems } }],
-			quickReplies: APPLIANCE_QUICK_REPLIES
+			quickReplies: QUICK_REPLIES
 		}
 	};
 }
 
 function parseIntent(body) {
 	const utterance = (body && body.userRequest && body.userRequest.utterance) || '';
-	if (/가전|제어|공기청정|청소기|에어컨|세탁|TV/.test(utterance)) return 'appliance';
-	if (/재구매|구매|장보기|주문|쿠팡/.test(utterance)) return 'rebuy';
+	console.log(`[parseIntent] utterance="${utterance}" (length=${utterance.length})`);
+
+	// 가전 제어 intent 확인
+	const isAppliance = /가전|제어|공기청정|청소기|에어컨|세탁|TV/.test(utterance);
+	console.log(`[parseIntent] isAppliance=${isAppliance}`);
+	if (isAppliance) {
+		console.log(`[parseIntent] ✅ Matched appliance keywords`);
+		return 'appliance';
+	}
+
+	// 재구매 intent 확인
+	const isRebuy = /재구매|구매|장보기|주문|쿠팡/.test(utterance);
+	console.log(`[parseIntent] isRebuy=${isRebuy}`);
+	if (isRebuy) {
+		console.log(`[parseIntent] ✅ Matched rebuy keywords`);
+		return 'rebuy';
+	}
+
+	console.log(`[parseIntent] → default to fridge`);
 	return 'fridge';
 }
 
@@ -270,55 +273,6 @@ app.get('/api/health', (_req, res) => {
 	res.json({ success: true, data: { status: 'ok', poc: true, timestamp: new Date().toISOString() } });
 });
 
-// ── 동적 이미지 엔드포인트 (SVG → PNG 변환, 캐시 비활성화) ──
-app.get('/api/image/:status', async (req, res) => {
-	const { status } = req.params;
-
-	// 냉장고 상태별 이미지
-	const statusConfig = {
-		expired: { bgColor: '#E63946' },
-		approaching: { bgColor: '#FFD93D' },
-		fresh: { bgColor: '#6BCB77' },
-	};
-
-	// 가전 기기 이미지
-	const applianceConfig = {
-		appliance_air_purifier: { bgColor: '#4ECDC4', emoji: '💨' },
-		appliance_robot_vacuum: { bgColor: '#45B7D1', emoji: '🤖' },
-		appliance_air_conditioner: { bgColor: '#96CEB4', emoji: '❄️' },
-		appliance_washer: { bgColor: '#FFEAA7', emoji: '🌊' },
-		appliance_tv: { bgColor: '#DDA0DD', emoji: '📺' },
-	};
-
-	const cfg = statusConfig[status] || applianceConfig[status];
-	if (!cfg) {
-		return res.status(400).json({ error: 'Invalid status' });
-	}
-
-	try {
-		// 가전 기기는 이모지 표시, 냉장고는 색상만 표시
-		let svg;
-		if (cfg.emoji) {
-			svg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
-  <rect fill="${cfg.bgColor}" width="200" height="200"/>
-  <text x="100" y="100" font-size="80" text-anchor="middle" dominant-baseline="middle">${cfg.emoji}</text>
-</svg>`;
-		} else {
-			svg = generateSvgImage(cfg.bgColor);
-		}
-
-		const pngBuffer = await sharp(Buffer.from(svg)).png().toBuffer();
-		res.type('image/png');
-		res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-		res.set('Pragma', 'no-cache');
-		res.set('Expires', '0');
-		res.send(pngBuffer);
-	} catch (err) {
-		console.error('[image error]', err.message);
-		res.status(500).json({ error: 'Image generation failed' });
-	}
-});
 
 // 루트 안내 (브라우저로 열었을 때)
 app.get('/', (_req, res) => {
