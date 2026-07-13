@@ -149,45 +149,39 @@ function buildFridgeResponse(req) {
 	return { version: '2.0', template: { outputs: [{ carousel: { type: 'listCard', items: carouselItems } }], quickReplies: QUICK_REPLIES } };
 }
 
-// 가전 제어 응답 생성
+// 가전 제어 응답 생성 (basicCard 캐루셀)
 function buildApplianceResponse(req) {
 	const carouselItems = APPLIANCES.map(appliance => ({
-		header: { title: `${appliance.icon} ${appliance.name}` },
-		items: [
-			{
-				title: appliance.name,
-				description: `상태: ${appliance.status === 'on' ? '🟢 켜짐' : '🔴 꺼짐'}`,
-				imageUrl: getImageUrl(req, `appliance_${appliance.id}.png`),
-				link: {
-					web: `https://example.com/${appliance.id}`
+		basicCard: {
+			title: `${appliance.icon} ${appliance.name}`,
+			description: `상태: ${appliance.status === 'on' ? '🟢 켜짐' : '🔴 꺼짐'}`,
+			thumbnail: {
+				imageUrl: getImageUrl(req, `appliance_${appliance.id}.png`)
+			},
+			buttons: [
+				{
+					action: 'message',
+					label: '🟢 켜기',
+					messageText: `${appliance.name} 켜줘`
+				},
+				{
+					action: 'message',
+					label: '❓ 상태',
+					messageText: `${appliance.name} 상태`
+				},
+				{
+					action: 'message',
+					label: '🔴 끄기',
+					messageText: `${appliance.name} 꺼줘`
 				}
-			}
-		],
-		// listCard 레벨 buttons (카카오 공식 문서: 최대 3개)
-		buttons: [
-			{
-				action: 'message',
-				label: '🟢 켜기',
-				messageText: `${appliance.name} 켜줘`
-			},
-			{
-				action: 'message',
-				label: '❓ 상태',
-				messageText: `${appliance.name} 상태`
-			},
-			{
-				action: 'message',
-				label: '🔴 끄기',
-				messageText: `${appliance.name} 꺼줘`
-			}
-		]
+			]
+		}
 	}));
 
 	return {
 		version: '2.0',
 		template: {
-			outputs: [{ carousel: { type: 'listCard', items: carouselItems } }],
-			quickReplies: QUICK_REPLIES
+			outputs: carouselItems
 		}
 	};
 }
