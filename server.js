@@ -158,32 +158,22 @@ function buildApplianceResponse(req) {
 				title: appliance.name,
 				description: `상태: ${appliance.status === 'on' ? '🟢 켜짐' : '🔴 꺼짐'}`,
 				imageUrl: getImageUrl(req, `appliance_${appliance.id}.png`),
-				// listCard item buttons (카카오가 지원하지 않으면 아래로 변경)
-				buttons: [
-					{
-						action: 'message',
-						label: '🟢 켜기',
-						messageText: `${appliance.name} 켜줘`
-					},
-					{
-						action: 'message',
-						label: '❓ 상태확인',
-						messageText: `${appliance.name} 상태`
-					},
-					{
-						action: 'message',
-						label: '🔴 끄기',
-						messageText: `${appliance.name} 꺼줘`
-					}
-				]
+				link: {
+					web: `https://example.com/${appliance.id}`
+				}
 			}
 		],
-		// 카로셀 카드 레벨 버튼 추가 (listCard 아래)
+		// listCard 레벨 buttons (카카오 공식 문서: 최대 3개)
 		buttons: [
 			{
 				action: 'message',
 				label: '🟢 켜기',
 				messageText: `${appliance.name} 켜줘`
+			},
+			{
+				action: 'message',
+				label: '❓ 상태',
+				messageText: `${appliance.name} 상태`
 			},
 			{
 				action: 'message',
