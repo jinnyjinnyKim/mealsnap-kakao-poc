@@ -71,35 +71,30 @@ const APPLIANCES = [
 	{
 		id: 'air_purifier',
 		name: '공기청정기',
-		icon: '💨',
 		status: 'on',
 		imageUrl: 'https://www.lge.co.kr/kr/upload/admin/storyThumbnail/air-purifier-care-solutions-thumb-640x800_20250522_124759.jpg'
 	},
 	{
 		id: 'robot_vacuum',
 		name: '로봇청소기',
-		icon: '🤖',
 		status: 'on',
 		imageUrl: 'https://static.lge.co.kr/kr/images/vacuum-cleaners/md10436830/usp/B95AWBTH_grid_Interior_modern_pc_03.png'
 	},
 	{
 		id: 'air_conditioner',
 		name: '에어컨',
-		icon: '❄️',
 		status: 'on',
 		imageUrl: 'https://www.lge.co.kr/kr/upload/admin/storyThumbnail/lg-air-conditioners-guide-thumb-640x800_20260213_144956.jpg'
 	},
 	{
 		id: 'dehumidifier',
 		name: '제습기',
-		icon: '💧',
 		status: 'off',
 		imageUrl: 'https://www.lge.co.kr/kr/upload/admin/storyThumbnail/main_P02_20260105_111404.jpg'
 	},
 	{
 		id: 'tv',
 		name: 'TV',
-		icon: '📺',
 		status: 'on',
 		imageUrl: 'https://www.lge.co.kr/kr/upload/admin/storyThumbnail/air-purifier-care-solutions-thumb-640x800_20250522_124759.jpg'
 	},
@@ -182,8 +177,8 @@ function buildFridgeResponse(req) {
 // 가전 제어 응답 생성 (basicCard 캐루셀)
 function buildApplianceResponse() {
 	const carouselItems = APPLIANCES.map(appliance => ({
-		title: `${appliance.icon} ${appliance.name}`,
-		description: `상태: ${appliance.status === 'on' ? '🟢 켜짐' : '🔴 꺼짐'}`,
+		title: appliance.name,
+		description: `상태: ${appliance.status === 'on' ? '켜짐' : '꺼짐'}`,
 		thumbnail: {
 			imageUrl: appliance.imageUrl
 		},
