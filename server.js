@@ -152,30 +152,28 @@ function buildFridgeResponse(req) {
 // 가전 제어 응답 생성 (basicCard 캐루셀)
 function buildApplianceResponse(req) {
 	const carouselItems = APPLIANCES.map(appliance => ({
-		basicCard: {
-			title: `${appliance.icon} ${appliance.name}`,
-			description: `상태: ${appliance.status === 'on' ? '🟢 켜짐' : '🔴 꺼짐'}`,
-			thumbnail: {
-				imageUrl: getImageUrl(req, `appliance_${appliance.id}.png`)
+		title: `${appliance.icon} ${appliance.name}`,
+		description: `상태: ${appliance.status === 'on' ? '🟢 켜짐' : '🔴 꺼짐'}`,
+		thumbnail: {
+			imageUrl: getImageUrl(req, `appliance_${appliance.id}.png`)
+		},
+		buttons: [
+			{
+				action: 'message',
+				label: '🟢 켜기',
+				messageText: `${appliance.name} 켜줘`
 			},
-			buttons: [
-				{
-					action: 'message',
-					label: '🟢 켜기',
-					messageText: `${appliance.name} 켜줘`
-				},
-				{
-					action: 'message',
-					label: '❓ 상태',
-					messageText: `${appliance.name} 상태`
-				},
-				{
-					action: 'message',
-					label: '🔴 끄기',
-					messageText: `${appliance.name} 꺼줘`
-				}
-			]
-		}
+			{
+				action: 'message',
+				label: '❓ 상태',
+				messageText: `${appliance.name} 상태`
+			},
+			{
+				action: 'message',
+				label: '🔴 끄기',
+				messageText: `${appliance.name} 꺼줘`
+			}
+		]
 	}));
 
 	return {
