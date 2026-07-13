@@ -66,7 +66,7 @@ const QUICK_REPLIES = [
 	{ label: '재료 재구매', action: 'message', messageText: '재료 재구매' },
 ];
 
-// 가전 기기 목록
+// 가전 기기 목록 (메모리 저장소)
 const APPLIANCES = [
 	{
 		id: 'air_purifier',
@@ -89,6 +89,21 @@ const APPLIANCES = [
 		status: 'off'
 	}
 ];
+
+// 기기명으로 기기 찾기
+function findAppliance(name) {
+	return APPLIANCES.find(app => app.name === name);
+}
+
+// 상태 변경
+function changeApplianceStatus(name, newStatus) {
+	const appliance = findAppliance(name);
+	if (appliance) {
+		appliance.status = newStatus;
+		return appliance;
+	}
+	return null;
+}
 
 
 function wrap(outputs) {
@@ -244,7 +259,35 @@ app.post('/api/kakao/webhook', (req, res) => {
 		if (intent === 'rebuy') {
 			response = buildRebuyResponse(req);
 		} else if (intent === 'appliance') {
-			response = buildApplianceResponse(req);
+			// 기기 켜기/끄기 처리
+			const turnOnMatch = utterance.match(/(\S+)\s+(켜졌|켜줬|켜)/);
+			const turnOffMatch = utterance.match(/(\S+)\s+(꺼졌|꺼줬|꺼)/);
+
+			if (turnOnMatch) {
+				const deviceName = turnOnMatch[1];
+				const appliance = findAppliance(deviceName);
+				if (appliance) {
+					changeApplianceStatus(deviceName, 'on');
+					response = wrap([{
+						simpleText: { text: `켜졌습니다.` }
+					}]);
+				} else {
+					response = buildApplianceResponse(req);
+				}
+			} else if (turnOffMatch) {
+				const deviceName = turnOffMatch[1];
+				const appliance = findAppliance(deviceName);
+				if (appliance) {
+					changeApplianceStatus(deviceName, 'off');
+					response = wrap([{
+						simpleText: { text: `꺼졌습니다.` }
+					}]);
+				} else {
+					response = buildApplianceResponse(req);
+				}
+			} else {
+				response = buildApplianceResponse(req);
+			}
 		} else {
 			response = buildFridgeResponse(req);
 		}
