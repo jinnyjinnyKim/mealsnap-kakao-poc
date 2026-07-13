@@ -25,10 +25,6 @@ const APPLIANCES = [
 	{
 		id: 'dehumidifier',
 		url: 'https://www.lge.co.kr/kr/upload/admin/storyThumbnail/main_P02_20260105_111404.jpg'
-	},
-	{
-		id: 'tv',
-		url: 'https://www.lge.co.kr/kr/upload/admin/storyThumbnail/air-purifier-care-solutions-thumb-640x800_20250522_124759.jpg'
 	}
 ];
 

@@ -87,12 +87,7 @@ const APPLIANCES = [
 		id: 'dehumidifier',
 		name: '제습기',
 		status: 'off'
-	},
-	{
-		id: 'tv',
-		name: 'TV',
-		status: 'on'
-	},
+	}
 ];
 
 
