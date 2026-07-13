@@ -181,7 +181,14 @@ function buildApplianceResponse(req) {
 	return {
 		version: '2.0',
 		template: {
-			outputs: carouselItems
+			outputs: [
+				{
+					carousel: {
+						type: 'basicCard',
+						items: carouselItems
+					}
+				}
+			]
 		}
 	};
 }
