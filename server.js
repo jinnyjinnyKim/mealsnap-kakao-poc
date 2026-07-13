@@ -158,6 +158,7 @@ function buildApplianceResponse(req) {
 				title: appliance.name,
 				description: `상태: ${appliance.status === 'on' ? '🟢 켜짐' : '🔴 꺼짐'}`,
 				imageUrl: getImageUrl(req, `appliance_${appliance.id}.png`),
+				// listCard item buttons (카카오가 지원하지 않으면 아래로 변경)
 				buttons: [
 					{
 						action: 'message',
@@ -175,6 +176,19 @@ function buildApplianceResponse(req) {
 						messageText: `${appliance.name} 꺼줘`
 					}
 				]
+			}
+		],
+		// 카로셀 카드 레벨 버튼 추가 (listCard 아래)
+		buttons: [
+			{
+				action: 'message',
+				label: '🟢 켜기',
+				messageText: `${appliance.name} 켜줘`
+			},
+			{
+				action: 'message',
+				label: '🔴 끄기',
+				messageText: `${appliance.name} 꺼줘`
 			}
 		]
 	}));
@@ -248,6 +262,10 @@ app.post('/api/kakao/webhook', (req, res) => {
 			|| response.template?.outputs?.[0]?.listCard?.items?.[0]?.imageUrl
 			|| 'N/A';
 		console.log('✅ [webhook] RESPONSE 이미지 URL:', firstImageUrl);
+
+		console.log('\n==================== 📤 최종 응답 ====================');
+		console.log(JSON.stringify(response, null, 2));
+		console.log('===================================================\n');
 
 		res.json(response);
 	} catch (err) {
