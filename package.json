@@ -4,7 +4,7 @@
   "description": "MealSnap x Kakao chatbot PoC (expired-ingredients + Coupang re-buy, no DB)",
   "main": "server.js",
   "scripts": {
-    "build": "node generate-images.js",
+    "build": "node download-and-resize-images.js",
     "start": "npm run build && node server.js"
   },
   "engines": {
