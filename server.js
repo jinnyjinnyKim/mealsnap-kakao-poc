@@ -31,7 +31,8 @@ const getImageUrl = (req, filename) => {
 	// Render의 X-Forwarded-* 헤더 우선, 없으면 직접 요청 정보 사용
 	const protocol = req.get('x-forwarded-proto') || req.protocol || 'https';
 	const host = req.get('x-forwarded-host') || req.get('host') || `localhost:${PORT}`;
-	const url = `${protocol}://${host}/${filename}`;
+	const timestamp = new Date().getTime();
+	const url = `${protocol}://${host}/${filename}?v=${timestamp}`;
 	console.log(`[getImageUrl] filename=${filename}, url=${url}`);
 	return url;
 };
