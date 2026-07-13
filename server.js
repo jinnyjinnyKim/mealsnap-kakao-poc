@@ -68,11 +68,41 @@ const QUICK_REPLIES = [
 
 // 가전 기기 목록
 const APPLIANCES = [
-	{ id: 'air_purifier', name: '공기청정기', icon: '💨', color: '#4ECDC4', status: 'on' },
-	{ id: 'robot_vacuum', name: '로봇청소기', icon: '🤖', color: '#45B7D1', status: 'on' },
-	{ id: 'air_conditioner', name: '에어컨', icon: '❄️', color: '#96CEB4', status: 'on' },
-	{ id: 'washer', name: '세탁기', icon: '🌊', color: '#FFEAA7', status: 'off' },
-	{ id: 'tv', name: 'TV', icon: '📺', color: '#DDA0DD', status: 'on' },
+	{
+		id: 'air_purifier',
+		name: '공기청정기',
+		icon: '💨',
+		status: 'on',
+		imageUrl: 'https://www.lge.co.kr/kr/upload/admin/storyThumbnail/air-purifier-care-solutions-thumb-640x800_20250522_124759.jpg'
+	},
+	{
+		id: 'robot_vacuum',
+		name: '로봇청소기',
+		icon: '🤖',
+		status: 'on',
+		imageUrl: 'https://static.lge.co.kr/kr/images/vacuum-cleaners/md10436830/usp/B95AWBTH_grid_Interior_modern_pc_03.png'
+	},
+	{
+		id: 'air_conditioner',
+		name: '에어컨',
+		icon: '❄️',
+		status: 'on',
+		imageUrl: 'https://www.lge.co.kr/kr/upload/admin/storyThumbnail/lg-air-conditioners-guide-thumb-640x800_20260213_144956.jpg'
+	},
+	{
+		id: 'dehumidifier',
+		name: '제습기',
+		icon: '💧',
+		status: 'off',
+		imageUrl: 'https://www.lge.co.kr/kr/upload/admin/storyThumbnail/main_P02_20260105_111404.jpg'
+	},
+	{
+		id: 'tv',
+		name: 'TV',
+		icon: '📺',
+		status: 'on',
+		imageUrl: 'https://www.lge.co.kr/kr/upload/admin/storyThumbnail/air-purifier-care-solutions-thumb-640x800_20250522_124759.jpg'
+	},
 ];
 
 
@@ -150,12 +180,12 @@ function buildFridgeResponse(req) {
 }
 
 // 가전 제어 응답 생성 (basicCard 캐루셀)
-function buildApplianceResponse(req) {
+function buildApplianceResponse() {
 	const carouselItems = APPLIANCES.map(appliance => ({
 		title: `${appliance.icon} ${appliance.name}`,
 		description: `상태: ${appliance.status === 'on' ? '🟢 켜짐' : '🔴 꺼짐'}`,
 		thumbnail: {
-			imageUrl: getImageUrl(req, `appliance_${appliance.id}.png`)
+			imageUrl: appliance.imageUrl
 		},
 		buttons: [
 			{
@@ -234,7 +264,7 @@ app.post('/api/kakao/webhook', (req, res) => {
 		if (intent === 'rebuy') {
 			response = buildRebuyResponse(req);
 		} else if (intent === 'appliance') {
-			response = buildApplianceResponse(req);
+			response = buildApplianceResponse();
 		} else {
 			response = buildFridgeResponse(req);
 		}
