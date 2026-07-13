@@ -77,10 +77,10 @@ async function processImage(appliance) {
 		console.log(`📥 Downloading ${appliance.id}...`);
 		const imageBuffer = await downloadImage(appliance.url);
 
-		console.log(`🔄 Resizing ${appliance.id} to 108x108...`);
+		console.log(`🔄 Resizing ${appliance.id} to 400x300...`);
 		const filename = `appliance_${appliance.id}.jpg`;
 		await sharp(imageBuffer)
-			.resize(108, 108, {
+			.resize(400, 300, {
 				fit: 'cover',
 				position: 'center'
 			})
