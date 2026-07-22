@@ -106,12 +106,14 @@ function changeApplianceStatus(name, newStatus) {
 }
 
 
-function wrap(outputs, includeQuickReplies = false) {
-	const response = { version: '2.0', template: { outputs } };
-	if (includeQuickReplies) {
-		response.template.quickReplies = QUICK_REPLIES;
-	}
-	return response;
+// 카카오 응답 래퍼 (기본 메뉴용 - quickReplies 포함)
+function wrap(outputs) {
+	return { version: '2.0', template: { outputs, quickReplies: QUICK_REPLIES } };
+}
+
+// 폴백 블록 응답 래퍼 (자연어 발화용 - quickReplies 제외)
+function wrapFallback(outputs) {
+	return { version: '2.0', template: { outputs } };
 }
 
 // 만료 항목 → 쿠팡 재구매 링크가 달린 listCard (이미지 포함)
@@ -180,7 +182,7 @@ function buildFridgeResponse(req) {
 		});
 	}
 
-	return { version: '2.0', template: { outputs: [{ carousel: { type: 'listCard', items: carouselItems } }], quickReplies: QUICK_REPLIES } };
+	return wrap([{ carousel: { type: 'listCard', items: carouselItems } }]);
 }
 
 // 가전 제어 응답 생성 (basicCard 캐루셀)
@@ -276,12 +278,12 @@ function searchPantryItems(allItems, searchTerms) {
 	return results;
 }
 
-// 검색 결과를 카카오 응답으로 변환
+// 검색 결과를 카카오 응답으로 변환 (폴백용 - quickReplies 제외)
 function buildSearchResponse(searchResults) {
 	if (!searchResults || searchResults.length === 0) {
-		return wrap([
+		return wrapFallback([
 			{ simpleText: { text: '찾으시는 재료가 냉장고에 없습니다.' } },
-		], false);  // quickReplies 제외
+		]);
 	}
 
 	const shown = searchResults.slice(0, MAX_LIST_ITEMS);
@@ -318,14 +320,14 @@ function buildSearchResponse(searchResults) {
 		? `찾은 재료 (${shown.length}/${searchResults.length})`
 		: `찾은 재료 (${shown.length}개)`;
 
-	return wrap([
+	return wrapFallback([
 		{
 			listCard: {
 				header: { title },
 				items: listItems,
 			},
 		},
-	], false);  // quickReplies 제외
+	]);
 }
 
 // 카카오 스킬 webhook (실제 백엔드와 동일 경로)
@@ -440,9 +442,9 @@ function buildApplianceControlResponse(utterance, req) {
 		if (appliance) {
 			changeApplianceStatus(deviceName, 'on');
 			console.log(`[appliance] ${deviceName} 켜짐`);
-			return wrap([
+			return wrapFallback([
 				{ simpleText: { text: `${deviceName}을(를) 켰습니다 🔌` } }
-			], false);  // quickReplies 제외
+			]);
 		}
 	}
 
@@ -454,9 +456,9 @@ function buildApplianceControlResponse(utterance, req) {
 		if (appliance) {
 			changeApplianceStatus(deviceName, 'off');
 			console.log(`[appliance] ${deviceName} 꺼짐`);
-			return wrap([
+			return wrapFallback([
 				{ simpleText: { text: `${deviceName}을(를) 껐습니다 🔌` } }
-			], false);  // quickReplies 제외
+			]);
 		}
 	}
 
@@ -477,7 +479,7 @@ app.post('/api/kakao/search-utterance', (req, res) => {
 
 		if (!utterance || !utterance.trim()) {
 			console.log('[search-utterance] ⚠️ 발화 없음, 에러 응답');
-			return res.json(wrap([
+			return res.json(wrapFallback([
 				{ simpleText: { text: '발화 내용을 확인할 수 없습니다.' } }
 			]));
 		}
@@ -518,7 +520,7 @@ app.post('/api/kakao/search-utterance', (req, res) => {
 	} catch (err) {
 		console.error('❌ [search-utterance] 에러:', err);
 		console.error('[search-utterance] 스택:', err.stack);
-		return res.json(wrap([
+		return res.json(wrapFallback([
 			{ simpleText: { text: '요청 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' } }
 		]));
 	}
