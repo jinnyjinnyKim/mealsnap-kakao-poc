@@ -106,8 +106,12 @@ function changeApplianceStatus(name, newStatus) {
 }
 
 
-function wrap(outputs) {
-	return { version: '2.0', template: { outputs, quickReplies: QUICK_REPLIES } };
+function wrap(outputs, includeQuickReplies = false) {
+	const response = { version: '2.0', template: { outputs } };
+	if (includeQuickReplies) {
+		response.template.quickReplies = QUICK_REPLIES;
+	}
+	return response;
 }
 
 // 만료 항목 → 쿠팡 재구매 링크가 달린 listCard (이미지 포함)
@@ -276,8 +280,8 @@ function searchPantryItems(allItems, searchTerms) {
 function buildSearchResponse(searchResults) {
 	if (!searchResults || searchResults.length === 0) {
 		return wrap([
-			{ simpleText: { text: '찾으시는 재료가 냉장고에 없습니다. 재료를 추가해 보세요.' } },
-		]);
+			{ simpleText: { text: '찾으시는 재료가 냉장고에 없습니다.' } },
+		], false);  // quickReplies 제외
 	}
 
 	const shown = searchResults.slice(0, MAX_LIST_ITEMS);
@@ -321,7 +325,7 @@ function buildSearchResponse(searchResults) {
 				items: listItems,
 			},
 		},
-	]);
+	], false);  // quickReplies 제외
 }
 
 // 카카오 스킬 webhook (실제 백엔드와 동일 경로)
@@ -412,7 +416,57 @@ app.post('/api/kakao/webhook', (req, res) => {
 	}
 });
 
-// 자연어 발화 기반 냉장고 검색 엔드포인트
+// 발화 의도 판단: 가전 제어 vs 냉장고 검색
+function determineUtteranceIntent(utterance) {
+	// 가전 제어 키워드
+	const isAppliance = /가전|제어|켜|꺼|공기청정|청소기|에어컨|세탁|TV|세제|환풍|히터|냉방/.test(utterance);
+	if (isAppliance) {
+		console.log(`[intent] 가전 제어 감지`);
+		return 'appliance';
+	}
+
+	// 냉장고 검색 키워드 (기본값)
+	console.log(`[intent] 냉장고 검색으로 판단 (기본)`);
+	return 'fridge';
+}
+
+// 가전 제어 응답 생성 (발화 기반) - quickReplies 제외
+function buildApplianceControlResponse(utterance, req) {
+	// 켜기 패턴
+	const turnOnMatch = utterance.match(/(\S+)\s*(?:켜(?:져|줬|라|요)?|켜줄)/);
+	if (turnOnMatch) {
+		const deviceName = turnOnMatch[1];
+		const appliance = findAppliance(deviceName);
+		if (appliance) {
+			changeApplianceStatus(deviceName, 'on');
+			console.log(`[appliance] ${deviceName} 켜짐`);
+			return wrap([
+				{ simpleText: { text: `${deviceName}을(를) 켰습니다 🔌` } }
+			], false);  // quickReplies 제외
+		}
+	}
+
+	// 끄기 패턴
+	const turnOffMatch = utterance.match(/(\S+)\s*(?:꺼(?:져|줬|라|요)?|꺼줄)/);
+	if (turnOffMatch) {
+		const deviceName = turnOffMatch[1];
+		const appliance = findAppliance(deviceName);
+		if (appliance) {
+			changeApplianceStatus(deviceName, 'off');
+			console.log(`[appliance] ${deviceName} 꺼짐`);
+			return wrap([
+				{ simpleText: { text: `${deviceName}을(를) 껐습니다 🔌` } }
+			], false);  // quickReplies 제외
+		}
+	}
+
+	// 기기 목록 표시
+	console.log(`[appliance] 기기 목록 표시`);
+	return buildApplianceResponse(req);
+}
+
+// 자연어 발화 기반 스마트홈 통합 엔드포인트
+// 발화 내용에 따라 냉장고 검색 vs 가전 제어로 자동 분기
 app.post('/api/kakao/search-utterance', (req, res) => {
 	try {
 		console.log('\n🔔 [search-utterance] 요청 받음');
@@ -428,22 +482,36 @@ app.post('/api/kakao/search-utterance', (req, res) => {
 			]));
 		}
 
-		// 1. 발화에서 상품명 추출
-		const productNames = extractProductNames(utterance);
-		console.log(`[search-utterance] 추출된 상품명=${JSON.stringify(productNames)}`);
+		// 1. 발화 의도 판단
+		const intent = determineUtteranceIntent(utterance);
+		console.log(`[search-utterance] intent=${intent}`);
 
-		// 2. 냉장고 전체 재료 조회 (PoC 목업)
-		const allItems = [...EXPIRED_ITEMS, ...FRESH_ITEMS];
-		console.log(`[search-utterance] 냉장고 총 ${allItems.length}개 재료`);
-		console.log(`[search-utterance] 검색 대상 items:`, JSON.stringify(allItems.slice(0, 2), null, 2));
+		let response;
 
-		// 3. 상품명으로 검색
-		const results = searchPantryItems(allItems, productNames);
-		console.log(`[search-utterance] ✅ 검색 결과: ${results.length}개 항목`);
-		console.log(`[search-utterance] 검색 결과:`, JSON.stringify(results, null, 2));
+		if (intent === 'appliance') {
+			// 가전 제어
+			console.log(`[search-utterance] 가전 제어 응답 생성`);
+			response = buildApplianceControlResponse(utterance, req);
+		} else {
+			// 냉장고 검색 (기본)
+			console.log(`[search-utterance] 냉장고 검색 응답 생성`);
 
-		// 4. 결과를 카카오 포맷으로 변환
-		const response = buildSearchResponse(results);
+			// 2. 발화에서 상품명 추출
+			const productNames = extractProductNames(utterance);
+			console.log(`[search-utterance] 추출된 상품명=${JSON.stringify(productNames)}`);
+
+			// 3. 냉장고 전체 재료 조회 (PoC 목업)
+			const allItems = [...EXPIRED_ITEMS, ...FRESH_ITEMS];
+			console.log(`[search-utterance] 냉장고 총 ${allItems.length}개 재료`);
+
+			// 4. 상품명으로 검색
+			const results = searchPantryItems(allItems, productNames);
+			console.log(`[search-utterance] ✅ 검색 결과: ${results.length}개 항목`);
+
+			// 5. 결과를 카카오 포맷으로 변환
+			response = buildSearchResponse(results);
+		}
+
 		console.log('[search-utterance] 응답 생성:', JSON.stringify(response, null, 2));
 
 		return res.json(response);
@@ -451,7 +519,7 @@ app.post('/api/kakao/search-utterance', (req, res) => {
 		console.error('❌ [search-utterance] 에러:', err);
 		console.error('[search-utterance] 스택:', err.stack);
 		return res.json(wrap([
-			{ simpleText: { text: '검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' } }
+			{ simpleText: { text: '요청 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' } }
 		]));
 	}
 });
