@@ -38,20 +38,20 @@ const getImageUrl = (req, filename) => {
 };
 
 const EXPIRED_ITEMS = [
-	{ name: '시금치', days_overdue: 5, expiry_date: '2026-07-01' },
-	{ name: '닭가슴살', days_overdue: 4, expiry_date: '2026-07-02' },
-	{ name: '우유', days_overdue: 3, expiry_date: '2026-07-03' },
-	{ name: '두부', days_overdue: 2, expiry_date: '2026-07-04' },
-	{ name: '계란', days_overdue: 1, expiry_date: '2026-07-05' },
+	{ name: '시금치', days_overdue: 5, expiry_date: '2026-07-01', expiry_status: 'expired', days_until_expiry: -5 },
+	{ name: '닭가슴살', days_overdue: 4, expiry_date: '2026-07-02', expiry_status: 'expired', days_until_expiry: -4 },
+	{ name: '우유', days_overdue: 3, expiry_date: '2026-07-03', expiry_status: 'expired', days_until_expiry: -3 },
+	{ name: '두부', days_overdue: 2, expiry_date: '2026-07-04', expiry_status: 'expired', days_until_expiry: -2 },
+	{ name: '계란', days_overdue: 1, expiry_date: '2026-07-05', expiry_status: 'expired', days_until_expiry: -1 },
 ];
 
 // 냉장고 전체 재료(만료 제외) 목업 — '냉장고 관리'에서 요약 표시용
 const FRESH_ITEMS = [
-	{ name: '양파', status: '신선', detail: '12일 남음' },
-	{ name: '당근', status: '신선', detail: '9일 남음' },
-	{ name: '고추장', status: '신선', detail: '40일 남음' },
-	{ name: '간장', status: '신선', detail: '120일 남음' },
-	{ name: '대파', status: '임박', detail: '2일 남음' },
+	{ name: '양파', status: '신선', detail: '12일 남음', expiry_status: 'fresh', days_until_expiry: 12 },
+	{ name: '당근', status: '신선', detail: '9일 남음', expiry_status: 'fresh', days_until_expiry: 9 },
+	{ name: '고추장', status: '신선', detail: '40일 남음', expiry_status: 'fresh', days_until_expiry: 40 },
+	{ name: '간장', status: '신선', detail: '120일 남음', expiry_status: 'fresh', days_until_expiry: 120 },
+	{ name: '대파', status: '임박', detail: '2일 남음', expiry_status: 'approaching', days_until_expiry: 2 },
 ];
 
 const MAX_LIST_ITEMS = 4; // 카카오 listCard 최대 5행
@@ -283,10 +283,32 @@ function buildSearchResponse(searchResults) {
 	const shown = searchResults.slice(0, MAX_LIST_ITEMS);
 	const overflow = searchResults.length - shown.length;
 
-	const listItems = shown.map((item) => ({
-		title: item.name,
-		description: item.detail || '상태 미상',
-	}));
+	const STATUS_LABEL = { expired: '만료', approaching: '임박', fresh: '신선', unknown: '미설정' };
+
+	const listItems = shown.map((item) => {
+		// 상태 라벨
+		const statusLabel = STATUS_LABEL[item.expiry_status] || '미설정';
+
+		// 날짜 정보
+		let dateInfo = '';
+		if (item.days_until_expiry !== null && item.days_until_expiry !== undefined) {
+			const d = item.days_until_expiry;
+			if (d < 0) {
+				dateInfo = `${Math.abs(d)}일 지남`;
+			} else if (d === 0) {
+				dateInfo = '오늘까지';
+			} else {
+				dateInfo = `${d}일 남음`;
+			}
+		}
+
+		const description = dateInfo ? `${statusLabel} · ${dateInfo}` : statusLabel;
+
+		return {
+			title: item.name,
+			description,
+		};
+	});
 
 	const title = overflow > 0
 		? `찾은 재료 (${shown.length}/${searchResults.length})`
@@ -413,10 +435,12 @@ app.post('/api/kakao/search-utterance', (req, res) => {
 		// 2. 냉장고 전체 재료 조회 (PoC 목업)
 		const allItems = [...EXPIRED_ITEMS, ...FRESH_ITEMS];
 		console.log(`[search-utterance] 냉장고 총 ${allItems.length}개 재료`);
+		console.log(`[search-utterance] 검색 대상 items:`, JSON.stringify(allItems.slice(0, 2), null, 2));
 
 		// 3. 상품명으로 검색
 		const results = searchPantryItems(allItems, productNames);
 		console.log(`[search-utterance] ✅ 검색 결과: ${results.length}개 항목`);
+		console.log(`[search-utterance] 검색 결과:`, JSON.stringify(results, null, 2));
 
 		// 4. 결과를 카카오 포맷으로 변환
 		const response = buildSearchResponse(results);
