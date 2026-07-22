@@ -240,6 +240,68 @@ function parseIntent(body) {
 	return 'fridge';
 }
 
+// 자연어 발화에서 상품명 추출
+function extractProductNames(utterance) {
+	const koreanPattern = /[가-힣]{2,10}(?:용|가)?/g;
+	const matches = utterance.match(koreanPattern) || [];
+
+	const stopwords = new Set(['있니', '있어', '남았', '있을', '해', '가', '을', '이', '는', '을', '고', '나', '요', '에', '로', '에서', '냉장고', '있나', '있습니다', '했나', '했나요']);
+	return matches.filter(m => !stopwords.has(m) && m.length > 1).slice(0, 3);
+}
+
+// 냉장고 재료 검색 (PoC 목업용)
+function searchPantryItems(allItems, searchTerms) {
+	if (!Array.isArray(searchTerms) || searchTerms.length === 0) return [];
+
+	const results = [];
+	const seen = new Set();
+
+	for (const term of searchTerms) {
+		const regex = new RegExp(term, 'i');
+		for (const item of allItems) {
+			const key = item.name;
+			if (seen.has(key)) continue;
+
+			if (regex.test(item.name)) {
+				results.push(item);
+				seen.add(key);
+			}
+		}
+	}
+
+	return results;
+}
+
+// 검색 결과를 카카오 응답으로 변환
+function buildSearchResponse(searchResults) {
+	if (!searchResults || searchResults.length === 0) {
+		return wrap([
+			{ simpleText: { text: '찾으시는 재료가 냉장고에 없습니다. 재료를 추가해 보세요.' } },
+		]);
+	}
+
+	const shown = searchResults.slice(0, MAX_LIST_ITEMS);
+	const overflow = searchResults.length - shown.length;
+
+	const listItems = shown.map((item) => ({
+		title: item.name,
+		description: item.detail || '상태 미상',
+	}));
+
+	const title = overflow > 0
+		? `찾은 재료 (${shown.length}/${searchResults.length})`
+		: `찾은 재료 (${shown.length}개)`;
+
+	return wrap([
+		{
+			listCard: {
+				header: { title },
+				items: listItems,
+			},
+		},
+	]);
+}
+
 // 카카오 스킬 webhook (실제 백엔드와 동일 경로)
 app.post('/api/kakao/webhook', (req, res) => {
 	try {
@@ -328,6 +390,48 @@ app.post('/api/kakao/webhook', (req, res) => {
 	}
 });
 
+// 자연어 발화 기반 냉장고 검색 엔드포인트
+app.post('/api/kakao/search-utterance', (req, res) => {
+	try {
+		console.log('\n🔔 [search-utterance] 요청 받음');
+		console.log('[search-utterance] body=', JSON.stringify(req.body, null, 2));
+
+		const utterance = (req.body && req.body.userRequest && req.body.userRequest.utterance) || '';
+		console.log(`[search-utterance] utterance="${utterance}"`);
+
+		if (!utterance || !utterance.trim()) {
+			console.log('[search-utterance] ⚠️ 발화 없음, 에러 응답');
+			return res.json(wrap([
+				{ simpleText: { text: '발화 내용을 확인할 수 없습니다.' } }
+			]));
+		}
+
+		// 1. 발화에서 상품명 추출
+		const productNames = extractProductNames(utterance);
+		console.log(`[search-utterance] 추출된 상품명=${JSON.stringify(productNames)}`);
+
+		// 2. 냉장고 전체 재료 조회 (PoC 목업)
+		const allItems = [...EXPIRED_ITEMS, ...FRESH_ITEMS];
+		console.log(`[search-utterance] 냉장고 총 ${allItems.length}개 재료`);
+
+		// 3. 상품명으로 검색
+		const results = searchPantryItems(allItems, productNames);
+		console.log(`[search-utterance] ✅ 검색 결과: ${results.length}개 항목`);
+
+		// 4. 결과를 카카오 포맷으로 변환
+		const response = buildSearchResponse(results);
+		console.log('[search-utterance] 응답 생성:', JSON.stringify(response, null, 2));
+
+		return res.json(response);
+	} catch (err) {
+		console.error('❌ [search-utterance] 에러:', err);
+		console.error('[search-utterance] 스택:', err.stack);
+		return res.json(wrap([
+			{ simpleText: { text: '검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' } }
+		]));
+	}
+});
+
 // 헬스 체크 (Render/카카오 확인용)
 app.get('/api/health', (_req, res) => {
 	res.json({ success: true, data: { status: 'ok', poc: true, timestamp: new Date().toISOString() } });
@@ -336,7 +440,7 @@ app.get('/api/health', (_req, res) => {
 
 // 루트 안내 (브라우저로 열었을 때)
 app.get('/', (_req, res) => {
-	res.type('text/plain').send('MealSnap x Kakao PoC server. POST /api/kakao/webhook');
+	res.type('text/plain').send('MealSnap x Kakao PoC server. POST /api/kakao/webhook or /api/kakao/search-utterance');
 });
 
 app.listen(PORT, '0.0.0.0', () => {
