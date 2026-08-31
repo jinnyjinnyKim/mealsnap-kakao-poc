@@ -3,7 +3,7 @@
 // 목적: "냉장고와 연결되면 이렇게 쓸 수 있다"를 보여주는 데모용 최소 서버.
 // 실제 MealSnap 백엔드(bee0 내부, 외부 접근 불가)를 그대로 노출하는 대신,
 // 유통기한 지난 식재료를 "그럴듯한 고정 목업"으로 응답한다.
-// 카카오 응답 스키마/재구매(이마트 검색) 링크 로직은 본 서버(backend/src/services/kakaoService.js)와 동일하게 맞췄다.
+// 카카오 응답 스키마/재구매(마켓컬리 검색) 링크 로직은 본 서버(backend/src/services/kakaoService.js)와 동일하게 맞췄다.
 
 const express = require('express');
 
@@ -56,10 +56,11 @@ const FRESH_ITEMS = [
 
 const MAX_LIST_ITEMS = 4; // 카카오 listCard 최대 5행
 
-// 이마트몰(SSG) 검색 링크. 쿠팡은 카카오 링크 버튼에서 열리지 않는 경우가 있어 이마트로 전환.
-const EMART_SEARCH_BASE = 'https://emart.ssg.com/search.ssg';
+// 마켓컬리 검색 링크. 쿠팡은 봇/외부 접근을 403으로 막아 카카오 링크에서 안 열리지만,
+// 컬리는 자동 접근도 200으로 허용해 인앱 브라우저 호환성이 좋다.
+const KURLY_SEARCH_BASE = 'https://www.kurly.com/search';
 function rebuyUrl(productName) {
-	return `${EMART_SEARCH_BASE}?target=all&query=${encodeURIComponent(productName || '')}`;
+	return `${KURLY_SEARCH_BASE}?sword=${encodeURIComponent(productName || '')}`;
 }
 
 const QUICK_REPLIES = [
@@ -117,7 +118,7 @@ function wrapFallback(outputs) {
 	return { version: '2.0', template: { outputs } };
 }
 
-// 만료 항목 → 이마트 재구매 링크가 달린 listCard (이미지 포함)
+// 만료 항목 → 마켓컬리 재구매 링크가 달린 listCard (이미지 포함)
 function expiredListCard(items, headerTitle, req) {
 	const shown = items.slice(0, MAX_LIST_ITEMS);
 	return {
@@ -133,7 +134,7 @@ function expiredListCard(items, headerTitle, req) {
 	};
 }
 
-// [재료 재구매] 만료 항목 → 이마트 검색 링크
+// [재료 재구매] 만료 항목 → 마켓컬리 검색 링크
 function buildRebuyResponse(req) {
 	if (EXPIRED_ITEMS.length === 0) {
 		return wrap([{ simpleText: { text: '재구매가 필요한(유통기한 지난) 재료가 없습니다' } }]);
@@ -236,7 +237,7 @@ function parseIntent(body) {
 	}
 
 	// 재구매 intent 확인
-	const isRebuy = /재구매|구매|장보기|주문|쿠팡|이마트/.test(utterance);
+	const isRebuy = /재구매|구매|장보기|주문|쿠팡|이마트|컬리|마켓컬리/.test(utterance);
 	console.log(`[parseIntent] isRebuy=${isRebuy}`);
 	if (isRebuy) {
 		console.log(`[parseIntent] ✅ Matched rebuy keywords`);
