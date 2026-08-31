@@ -1,7 +1,7 @@
 {
   "name": "mealsnap-kakao-poc",
   "version": "1.0.0",
-  "description": "MealSnap x Kakao chatbot PoC (expired-ingredients + Coupang re-buy, no DB)",
+  "description": "MealSnap x Kakao chatbot PoC (expired-ingredients + Emart re-buy, no DB)",
   "main": "server.js",
   "scripts": {
     "build": "node generate-status-images.js",
