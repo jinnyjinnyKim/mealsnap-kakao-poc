@@ -244,8 +244,16 @@ function parseIntent(body) {
 		return 'rebuy';
 	}
 
-	console.log(`[parseIntent] → default to fridge`);
-	return 'fridge';
+	// 냉장고 intent 확인 (재료/식품/보관 관련)
+	const isFridge = /냉장고|재료|식재료|식품|유통기한|남았|보관|재고|먹을|반찬|채소|과일|고기|우유|계란|달걀/.test(utterance);
+	console.log(`[parseIntent] isFridge=${isFridge}`);
+	if (isFridge) {
+		console.log(`[parseIntent] ✅ Matched fridge keywords`);
+		return 'fridge';
+	}
+
+	console.log(`[parseIntent] → unknown (냉장고/가전 무관)`);
+	return 'unknown';
 }
 
 // 자연어 발화에서 상품명 추출
@@ -380,8 +388,11 @@ app.post('/api/kakao/webhook', (req, res) => {
 			} else {
 				response = buildApplianceResponse(req);
 			}
-		} else {
+		} else if (intent === 'fridge') {
 			response = buildFridgeResponse(req);
+		} else {
+			// 냉장고/가전과 무관한 발화 → test 블록
+			response = wrapFallback([{ simpleText: { text: 'test 블록입니다' } }]);
 		}
 
 		console.log(
