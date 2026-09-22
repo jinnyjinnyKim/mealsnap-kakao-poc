@@ -440,9 +440,15 @@ function determineUtteranceIntent(utterance) {
 		return 'appliance';
 	}
 
-	// 냉장고 검색 키워드 (기본값)
-	console.log(`[intent] 냉장고 검색으로 판단 (기본)`);
-	return 'fridge';
+	// 냉장고 검색 키워드
+	const isFridge = /냉장고|재료|식재료|식품|유통기한|남았|보관|재고|먹을|반찬|채소|과일|고기|우유|계란|달걀|있(?:어|나|니|을)/.test(utterance);
+	if (isFridge) {
+		console.log(`[intent] 냉장고 검색 감지`);
+		return 'fridge';
+	}
+
+	console.log(`[intent] unknown (냉장고/가전 무관)`);
+	return 'unknown';
 }
 
 // 가전 제어 응답 생성 (발화 기반) - quickReplies 제외
@@ -507,8 +513,12 @@ app.post('/api/kakao/search-utterance', (req, res) => {
 			// 가전 제어
 			console.log(`[search-utterance] 가전 제어 응답 생성`);
 			response = buildApplianceControlResponse(utterance, req);
+		} else if (intent === 'unknown') {
+			// 냉장고/가전 무관 발화 → test 블록
+			console.log(`[search-utterance] test 블록 응답 생성`);
+			response = wrapFallback([{ simpleText: { text: 'test 블록입니다' } }]);
 		} else {
-			// 냉장고 검색 (기본)
+			// 냉장고 검색
 			console.log(`[search-utterance] 냉장고 검색 응답 생성`);
 
 			// 2. 발화에서 상품명 추출
