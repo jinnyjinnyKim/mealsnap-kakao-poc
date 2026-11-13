@@ -1,0 +1,15 @@
+{
+  "name": "kakao-christmas-a2ui-poc",
+  "version": "1.0.0",
+  "description": "TV A2UI 크리스마스 영화 추천 응답을 카카오 챗봇 스킬로 옮겨보는 PoC",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.0"
+  }
+}
