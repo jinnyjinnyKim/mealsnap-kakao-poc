@@ -22,11 +22,10 @@ const MOVIES = [
 	{ id: 'scrooge', title: '스크루지: 크리스마스 캐럴', tag: '기묘한 성탄절 판타지' },
 ];
 
-// 카카오 quickReply label 은 14자 제한 → label 은 줄이고 messageText 에 원문 발화를 둔다
 const CHIPS = [
-	{ label: '가스펠 상세 정보', messageText: '크리스마스 가스펠 상세 정보 보여줘' },
-	{ label: '나 홀로 집에 들어줘', messageText: '나 홀로 집에 들어줘' },
-	{ label: '인기 영화 추천해 줘', messageText: '인기 영화 추천해 줘' },
+	{ label: '"크리스마스 가스펠 상세 정보 보여줘"', messageText: '크리스마스 가스펠 상세 정보 보여줘' },
+	{ label: '"나 홀로 집에 틀어줘"', messageText: '나 홀로 집에 틀어줘' },
+	{ label: '"인기 영화 추천해 줘"', messageText: '인기 영화 추천해 줘' },
 ];
 
 function baseUrl(req) {
@@ -44,7 +43,7 @@ function buildResponse(req) {
 				{
 					simpleText: {
 						text:
-							'🎄 크리스마스에 보기 좋은 따뜻한 영화를 추천해 드려요.\n\n' +
+							'크리스마스에 보기 좋은 따뜻한 영화를 추천해 드려요.\n\n' +
 							'크리스마스 가스펠, 인턴, 시네마 천국, 스크루지: 크리스마스 캐럴을 추천해 드립니다.',
 					},
 				},

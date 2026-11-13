@@ -557,11 +557,10 @@ const XMAS_MOVIES = [
 	{ id: 'scrooge', title: '스크루지: 크리스마스 캐럴', tag: '기묘한 성탄절 판타지' },
 ];
 
-// 카카오 quickReply label 은 14자 제한
 const XMAS_CHIPS = [
-	{ label: '가스펠 상세 정보', messageText: '크리스마스 가스펠 상세 정보 보여줘' },
-	{ label: '나 홀로 집에 들어줘', messageText: '나 홀로 집에 들어줘' },
-	{ label: '인기 영화 추천해 줘', messageText: '인기 영화 추천해 줘' },
+	{ label: '"크리스마스 가스펠 상세 정보 보여줘"', messageText: '크리스마스 가스펠 상세 정보 보여줘' },
+	{ label: '"나 홀로 집에 틀어줘"', messageText: '나 홀로 집에 틀어줘' },
+	{ label: '"인기 영화 추천해 줘"', messageText: '인기 영화 추천해 줘' },
 ];
 
 function buildChristmasResponse(req) {
