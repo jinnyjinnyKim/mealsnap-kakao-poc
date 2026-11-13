@@ -549,6 +549,74 @@ app.post('/api/kakao/search-utterance', (req, res) => {
 	}
 });
 
+// ── 크리스마스 영화 추천 (TV A2UI → 카카오 스킬 PoC) ──
+const XMAS_MOVIES = [
+	{ id: 'gospel', title: '크리스마스 가스펠', tag: '따뜻한 음악과 가족' },
+	{ id: 'intern', title: '인턴', tag: '마음 따뜻한 인생 영화' },
+	{ id: 'cinema', title: '시네마 천국', tag: '클래식 명작의 감동' },
+	{ id: 'scrooge', title: '스크루지: 크리스마스 캐럴', tag: '기묘한 성탄절 판타지' },
+];
+
+// 카카오 quickReply label 은 14자 제한
+const XMAS_CHIPS = [
+	{ label: '가스펠 상세 정보', messageText: '크리스마스 가스펠 상세 정보 보여줘' },
+	{ label: '나 홀로 집에 들어줘', messageText: '나 홀로 집에 들어줘' },
+	{ label: '인기 영화 추천해 줘', messageText: '인기 영화 추천해 줘' },
+];
+
+function buildChristmasResponse(req) {
+	const proto = req.get('x-forwarded-proto') || req.protocol || 'https';
+	const host = req.get('x-forwarded-host') || req.get('host') || `localhost:${PORT}`;
+	const base = `${proto}://${host}`;
+	return {
+		version: '2.0',
+		template: {
+			outputs: [
+				{
+					simpleText: {
+						text:
+							'🎄 크리스마스에 보기 좋은 따뜻한 영화를 추천해 드려요.\n\n' +
+							'크리스마스 가스펠, 인턴, 시네마 천국, 스크루지: 크리스마스 캐럴을 추천해 드립니다.',
+					},
+				},
+				{
+					carousel: {
+						type: 'basicCard',
+						items: XMAS_MOVIES.map((m) => ({
+							title: m.title,
+							description: m.tag,
+							thumbnail: { imageUrl: `${base}/poster_${m.id}.png` },
+							buttons: [
+								{
+									action: 'webLink',
+									label: '상세 정보',
+									webLinkUrl: `https://search.naver.com/search.naver?query=${encodeURIComponent(m.title + ' 영화')}`,
+								},
+							],
+						})),
+					},
+				},
+				{ simpleText: { text: '이런 것도 물어보세요 👇' } },
+			],
+			quickReplies: XMAS_CHIPS.map((c) => ({ label: c.label, action: 'message', messageText: c.messageText })),
+		},
+	};
+}
+
+app.post('/api/kakao/christmas-movies', (req, res) => {
+	try {
+		const utterance = req.body && req.body.userRequest && req.body.userRequest.utterance;
+		console.log(`[christmas-movies] from=${req.ip} host=${req.get('host')} utterance=${JSON.stringify(utterance)}`);
+		console.log('[christmas-movies] request body:', JSON.stringify(req.body));
+		const body = buildChristmasResponse(req);
+		console.log('[christmas-movies] response body:', JSON.stringify(body, null, 2));
+		res.json(body);
+	} catch (err) {
+		console.error('[christmas-movies] error:', err);
+		res.json(wrapFallback([{ simpleText: { text: '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' } }]));
+	}
+});
+
 // 헬스 체크 (Render/카카오 확인용)
 app.get('/api/health', (_req, res) => {
 	res.json({ success: true, data: { status: 'ok', poc: true, timestamp: new Date().toISOString() } });

@@ -74,9 +74,13 @@ function buildResponse(req) {
 
 // 발화와 무관하게 항상 같은 응답 (PoC)
 app.post('/api/kakao/christmas-movies', (req, res) => {
+	const ts = new Date().toISOString();
 	const utterance = req.body && req.body.userRequest && req.body.userRequest.utterance;
-	console.log(`${new Date().toISOString()} christmas-movies utterance=${JSON.stringify(utterance)}`);
-	res.json(buildResponse(req));
+	console.log(`[${ts}] POST /api/kakao/christmas-movies from=${req.ip} host=${req.get('host')} utterance=${JSON.stringify(utterance)}`);
+	console.log(`[${ts}] request body: ${JSON.stringify(req.body)}`);
+	const body = buildResponse(req);
+	console.log(`[${ts}] response body: ${JSON.stringify(body, null, 2)}`);
+	res.json(body);
 });
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
